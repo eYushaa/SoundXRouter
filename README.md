@@ -15,7 +15,7 @@
 ---
 
 <details open>
-<summary><h1>🇺🇸 English (Click to Expand)</h1></summary>
+<summary><h1>🇺🇸 English</h1></summary>
 
 ## 🚀 What is SoundX Router?
 
@@ -117,7 +117,7 @@ All of this is wrapped in a stunning **Liquid Glass UI** that looks as good as i
 ---
 
 <details>
-<summary><h1>🇹🇷 Türkçe (Okumak için Tıklayın)</h1></summary>
+<summary><h1>🇹🇷 Türkçe</h1></summary>
 
 ## 🚀 SoundX Router Nedir?
 
