@@ -58,7 +58,18 @@ All of this is wrapped in a stunning **Liquid Glass UI** that looks as good as i
 - **Python:** Version 3.10 or higher
 - **Virtual Cable:** Recommended (e.g., VB-Audio Cable) to route audio to Discord/OBS.
 
-### Step-by-Step Guide
+### 📦 Method 1: Portable (Recommended)
+1.  Go to the [Releases](https://github.com/eYushaa/SoundXRouter/releases) page.
+2.  Download the latest `SoundXRouter_vX.X.zip`.
+3.  Extract the ZIP file.
+4.  Run `SoundXRouter.exe`.
+
+### ⚡ Method 2: Quick Start (Source)
+1.  Clone the repository.
+2.  Run `install.bat` to install dependencies automatically.
+3.  Run `start.bat` to launch the application.
+
+### 🛠️ Method 3: Manual Installation (Advanced)
 
 1.  **Clone the Repository:**
     ```bash
@@ -149,7 +160,18 @@ Tüm bunlar, göründüğü kadar iyi duyulan muhteşem bir **Liquid Glass (Sıv
 - **Python:** Sürüm 3.10 veya üzeri
 - **Sanal Kablo:** Sesi Discord/OBS'e aktarmak için önerilir (örn: VB-Audio Cable).
 
-### Adım Adım Rehber
+### 📦 Yöntem 1: Taşınabilir (Önerilen)
+1.  [Releases](https://github.com/eYushaa/SoundXRouter/releases) sayfasına gidin.
+2.  En son sürüm `SoundXRouter_vX.X.zip` dosyasını indirin.
+3.  ZIP dosyasını klasöre çıkartın.
+4.  `SoundXRouter.exe` dosyasını çalıştırın.
+
+### ⚡ Yöntem 2: Hızlı Başlangıç (Kaynak Kod)
+1.  Projeyi indirin (Clone).
+2.  `install.bat` dosyasına çift tıklayarak kütüphaneleri otomatik yükleyin.
+3.  `start.bat` dosyasına çift tıklayarak uygulamayı başlatın.
+
+### 🛠️ Yöntem 3: Manuel Kurulum (Gelişmiş)
 
 1.  **Depoyu Klonlayın:**
     ```bash
