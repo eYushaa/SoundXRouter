@@ -10,6 +10,7 @@
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows-win.svg)](https://www.microsoft.com/windows)
+[![Download](https://img.shields.io/badge/Download-Latest_Release-blueviolet)](https://github.com/eYushaa/SoundXRouter/releases/latest)
 
 </div>
 
