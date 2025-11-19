@@ -1,5 +1,3 @@
-# SoundX Router 🎛️
-
 ![SoundX Router Banner](static/logo1.png)
 
 <div align="center">
