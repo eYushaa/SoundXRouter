@@ -1,0 +1,7 @@
+sounddevice
+numpy
+soundfile
+flask
+PyQt5
+PyQtWebEngine
+keyboard

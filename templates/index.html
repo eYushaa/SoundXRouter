@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoundX Router</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="glass-container">
+        <div class="background-blobs">
+            <div class="blob blob-1"></div>
+            <div class="blob blob-2"></div>
+            <div class="blob blob-3"></div>
+            <div class="reactive-aura" id="reactive-aura"></div>
+        </div>
+
+        <header class="pywebview-drag-region">
+            <div class="logo">SoundX Router</div>
+            <div class="header-controls">
+                <div class="status-indicator" id="status-indicator">READY</div>
+                <div class="window-actions">
+                    <button class="win-btn min" onclick="minimizeApp()">─</button>
+                    <button class="win-btn close" onclick="closeApp()">✕</button>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <!-- Left Column: Settings -->
+            <section class="panel settings-panel">
+                <h2>Configuration</h2>
+                <div class="preset-controls">
+                    <div class="preset-row">
+                        <select id="preset-select">
+                            <option value="">Presets</option>
+                        </select>
+                        <button class="icon-btn" id="load-preset">Load</button>
+                    </div>
+                    <div class="preset-row">
+                        <input type="text" id="preset-name" placeholder="Preset name">
+                        <button class="icon-btn" id="save-preset">Save</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Audio Driver</label>
+                    <div class="select-wrapper">
+                        <select id="driver-select">
+                            <option>Loading...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Input Device (From RVC)</label>
+                    <div class="select-wrapper">
+                        <select id="input-select">
+                            <option>Select Driver First</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Output Device (To Mic)</label>
+                    <div class="select-wrapper">
+                        <select id="output-select">
+                            <option>Select Driver First</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="version-footer">
+                    <span id="version-display">V 1.0</span>
+                    <button class="update-btn" onclick="checkUpdate()">Check Update</button>
+                </div>
+            </section>
+
+            <!-- Right Column: Sound & Control -->
+            <section class="panel control-panel">
+                <div class="sound-header">
+                    <h2>Background Sound</h2>
+                    <div>
+                        <button class="icon-btn" onclick="openFolder()">📂 Folder</button>
+                        <button class="icon-btn" onclick="refreshSounds()">🔄</button>
+                    </div>
+                </div>
+
+                <div class="sound-grid" id="sound-grid">
+                    <!-- Sounds injected here -->
+                    <div class="sound-item active" onclick="selectSound(this, null)">None</div>
+                </div>
+
+                <div class="control-footer">
+                    <div class="meter-column">
+                        <div class="meter">
+                            <div class="meter-header">
+                                <span>Input Level</span>
+                                <span id="input-meter-value">0%</span>
+                            </div>
+                            <div class="meter-bar">
+                                <div class="meter-fill" id="input-meter-fill"></div>
+                            </div>
+                        </div>
+                        <div class="meter">
+                            <div class="meter-header">
+                                <span>Output Level</span>
+                                <span id="output-meter-value">0%</span>
+                            </div>
+                            <div class="meter-bar">
+                                <div class="meter-fill" id="output-meter-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="volume-inline">
+                        <div class="volume-header">
+                            <span>Volume</span>
+                            <span id="vol-display">20%</span>
+                        </div>
+                        <input type="range" id="volume-slider" min="0" max="100" value="20">
+                    </div>
+                </div>
+
+                <div class="wave-visual">
+                    <div class="wave-header">Live Waveform</div>
+                    <canvas id="wave-canvas"></canvas>
+                </div>
+
+                <button id="toggle-btn" class="toggle-btn">Start Routing</button>
+            </section>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>
