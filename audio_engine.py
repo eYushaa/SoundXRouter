@@ -3,52 +3,69 @@ import numpy as np
 import soundfile as sf
 import sys
 import os
+import threading
+import collections
 
 class AudioEngine:
-    def __init__(self, input_device_id, output_device_id, noise_file_path=None, noise_volume=0.2, sample_rate=44100, block_size=1024):
+    def __init__(self, input_device_id, output_device_id, noise_file_path=None, noise_volume=0.2, 
+                 sample_rate=48000, block_size=256, app_mixer=None, monitor_device_id=None,
+                 monitor_enabled=False, monitor_volume=1.0, mic_volume=1.0):
         self.input_device_id = input_device_id
         self.output_device_id = output_device_id
+        self.monitor_device_id = monitor_device_id
+        self.monitor_enabled = monitor_enabled
+        self.monitor_volume = monitor_volume
         self.sample_rate = sample_rate
         self.block_size = block_size
         self.noise_volume = noise_volume
+        self.mic_volume = mic_volume
+        self.mic_muted = False
+        self.app_mixer = app_mixer
+
         self.stream = None
+        self.monitor_stream = None
         self.running = False
+        
+        # Audio levels
         self.last_input_level = 0.0
         self.last_output_level = 0.0
+        self.last_mic_level = 0.0
+        self.app_levels = {}
         
+        # Background noise
         self.noise_data = None
         self.noise_index = 0
         
+        # Preview data
         self.preview_data = None
         self.preview_index = 0
         
-        self.active_effects = [] # List of currently playing effects
+        # Active sound effects
+        self.active_effects = []
+        self.effects_lock = threading.Lock()
+        
+        # Monitor buffer for headphones
+        self.monitor_buffer = collections.deque(maxlen=40)
+        self.monitor_lock = threading.Lock()
         
         if noise_file_path:
             self.load_noise(noise_file_path)
 
     def load_noise(self, file_path):
-        if not os.path.exists(file_path):
-            print(f"File not found: {file_path}")
+        if not file_path or not os.path.exists(file_path):
             self.noise_data = None
             return
 
-        print(f"Loading noise file: {file_path}")
         try:
             data, fs = sf.read(file_path, dtype='float32')
-            
-            # Handle channels first
             if len(data.shape) == 1:
                 data = data.reshape(-1, 1)
             
-            # Resample if necessary
             if fs != self.sample_rate:
-                print(f"Resampling noise from {fs} to {self.sample_rate}...")
                 data = self.resample_audio(data, fs, self.sample_rate)
             
             self.noise_data = data
-            self.noise_index = 0 # Reset index
-            print(f"Noise loaded. Shape: {self.noise_data.shape}")
+            self.noise_index = 0
         except Exception as e:
             print(f"Error loading noise file: {e}")
             self.noise_data = None
@@ -85,14 +102,14 @@ class AudioEngine:
                 data = data.reshape(-1, 1)
             
             if fs != self.sample_rate:
-                # Resample
                 data = self.resample_audio(data, fs, self.sample_rate)
             
-            self.active_effects.append({
-                'data': data,
-                'index': 0,
-                'volume': volume
-            })
+            with self.effects_lock:
+                self.active_effects.append({
+                    'data': data,
+                    'index': 0,
+                    'volume': volume
+                })
         except Exception as e:
             print(f"Error playing effect: {e}")
 
@@ -103,146 +120,163 @@ class AudioEngine:
         ratio = target_rate / src_rate
         new_length = int(len(data) * ratio)
         
-        # Create time indices for interpolation
         x_old = np.linspace(0, len(data), len(data))
         x_new = np.linspace(0, len(data), new_length)
         
-        # Resample each channel
         new_data = np.zeros((new_length, data.shape[1]), dtype='float32')
         for i in range(data.shape[1]):
             new_data[:, i] = np.interp(x_new, x_old, data[:, i])
             
         return new_data
 
-    def callback(self, indata, outdata, frames, time, status):
-        if status:
-            print(status, file=sys.stderr)
-        
-        # 1. Start with Input
-        mixed = indata.copy()
-        # Track RMS input level
-        if indata.size:
-            self.last_input_level = float(np.sqrt(np.mean(np.square(indata))))
+    def callback(self, indata, outdata, frames, time_info, status):
+        channels = outdata.shape[1]
+        mixed = np.zeros((frames, channels), dtype=np.float32)
+
+        # 1. Microphone / Physical Input
+        if indata is not None and indata.size > 0 and not self.mic_muted:
+            in_ch = indata.shape[1]
+            mic_audio = indata.copy()
+            if in_ch != channels:
+                if in_ch == 1:
+                    mic_audio = np.tile(mic_audio, (1, channels))
+                else:
+                    new_mic = np.zeros((frames, channels), dtype=np.float32)
+                    min_ch = min(in_ch, channels)
+                    new_mic[:, :min_ch] = mic_audio[:, :min_ch]
+                    mic_audio = new_mic
+            
+            mic_audio *= self.mic_volume
+            mixed += mic_audio
+            self.last_mic_level = float(np.sqrt(np.mean(np.square(mic_audio))))
         else:
-            self.last_input_level = 0.0
-        
-        # 2. Mix Noise if available
-        if self.noise_data is not None:
+            self.last_mic_level = 0.0
+
+        self.last_input_level = self.last_mic_level
+
+        # 2. Mix Captured Applications
+        if self.app_mixer:
+            app_mix, app_levels = self.app_mixer.pull_mix(frames, channels)
+            mixed += app_mix
+            self.app_levels = app_levels
+
+        # 3. Mix Background Noise
+        if self.noise_data is not None and self.noise_volume > 0.001:
             noise_len = len(self.noise_data)
             current_idx = self.noise_index
             remaining = frames
             
             noise_chunk = np.zeros((frames, self.noise_data.shape[1]), dtype='float32')
-            
-            # Fill chunk with looping
             chunk_idx = 0
             while remaining > 0:
                 take = min(remaining, noise_len - current_idx)
                 noise_chunk[chunk_idx:chunk_idx+take] = self.noise_data[current_idx:current_idx+take]
-                
                 remaining -= take
                 chunk_idx += take
                 current_idx = (current_idx + take) % noise_len
             
             self.noise_index = current_idx
             
-            # Match channels
-            if noise_chunk.shape[1] != indata.shape[1]:
+            if noise_chunk.shape[1] != channels:
                 if noise_chunk.shape[1] == 1:
-                    noise_chunk = np.tile(noise_chunk, (1, indata.shape[1]))
+                    noise_chunk = np.tile(noise_chunk, (1, channels))
                 else:
-                    new_noise = np.zeros_like(indata)
-                    min_ch = min(noise_chunk.shape[1], indata.shape[1])
+                    new_noise = np.zeros((frames, channels), dtype=np.float32)
+                    min_ch = min(noise_chunk.shape[1], channels)
                     new_noise[:, :min_ch] = noise_chunk[:, :min_ch]
                     noise_chunk = new_noise
             
             mixed += noise_chunk * self.noise_volume
 
-        # 2.5 Mix Preview if available (Looping)
+        # 4. Mix Preview if active
         if self.preview_data is not None:
             prev_len = len(self.preview_data)
             current_idx = self.preview_index
             remaining = frames
-            
             prev_chunk = np.zeros((frames, self.preview_data.shape[1]), dtype='float32')
-            
             chunk_idx = 0
             while remaining > 0:
                 take = min(remaining, prev_len - current_idx)
                 prev_chunk[chunk_idx:chunk_idx+take] = self.preview_data[current_idx:current_idx+take]
-                
                 remaining -= take
                 chunk_idx += take
                 current_idx = (current_idx + take) % prev_len
-            
             self.preview_index = current_idx
             
-            # Match channels
-            if prev_chunk.shape[1] != indata.shape[1]:
+            if prev_chunk.shape[1] != channels:
                 if prev_chunk.shape[1] == 1:
-                    prev_chunk = np.tile(prev_chunk, (1, indata.shape[1]))
+                    prev_chunk = np.tile(prev_chunk, (1, channels))
                 else:
-                    new_prev = np.zeros_like(indata)
-                    min_ch = min(prev_chunk.shape[1], indata.shape[1])
+                    new_prev = np.zeros((frames, channels), dtype=np.float32)
+                    min_ch = min(prev_chunk.shape[1], channels)
                     new_prev[:, :min_ch] = prev_chunk[:, :min_ch]
                     prev_chunk = new_prev
-            
-            mixed += prev_chunk # Full volume for preview
+            mixed += prev_chunk
 
-        # 3. Mix Active Effects
-        # Iterate backwards to allow removal
-        for i in range(len(self.active_effects) - 1, -1, -1):
-            effect = self.active_effects[i]
-            data = effect['data']
-            idx = effect['index']
-            vol = effect['volume']
-            
-            remaining = frames
-            effect_len = len(data)
-            
-            if idx >= effect_len:
-                self.active_effects.pop(i)
-                continue
+        # 5. Mix Soundboard Effects
+        with self.effects_lock:
+            for i in range(len(self.active_effects) - 1, -1, -1):
+                effect = self.active_effects[i]
+                data = effect['data']
+                idx = effect['index']
+                vol = effect['volume']
+                effect_len = len(data)
                 
-            take = min(remaining, effect_len - idx)
-            
-            # Get chunk
-            effect_chunk = data[idx:idx+take]
-            
-            # Match channels
-            if effect_chunk.shape[1] != indata.shape[1]:
-                if effect_chunk.shape[1] == 1:
-                    effect_chunk = np.tile(effect_chunk, (1, indata.shape[1]))
-                else:
-                    # Truncate or pad
-                    # For simplicity, just take min channels or pad
-                    temp = np.zeros((take, indata.shape[1]), dtype='float32')
-                    min_ch = min(effect_chunk.shape[1], indata.shape[1])
-                    temp[:, :min_ch] = effect_chunk[:, :min_ch]
-                    effect_chunk = temp
+                if idx >= effect_len:
+                    self.active_effects.pop(i)
+                    continue
+                
+                take = min(frames, effect_len - idx)
+                effect_chunk = data[idx:idx+take]
+                
+                if effect_chunk.shape[1] != channels:
+                    if effect_chunk.shape[1] == 1:
+                        effect_chunk = np.tile(effect_chunk, (1, channels))
+                    else:
+                        temp = np.zeros((take, channels), dtype='float32')
+                        min_ch = min(effect_chunk.shape[1], channels)
+                        temp[:, :min_ch] = effect_chunk[:, :min_ch]
+                        effect_chunk = temp
+                
+                mixed[:take] += effect_chunk * vol
+                effect['index'] += take
+                if effect['index'] >= effect_len:
+                    self.active_effects.pop(i)
 
-            # Add to mix (handle if effect is shorter than frame)
-            # We need to add it to the correct part of 'mixed'
-            # Since we are processing the whole frame at once, and effects might end mid-frame,
-            # we actually need to be careful. 
-            # Simplified: We just add what we have to the start of the mix buffer (since we don't support sub-frame timing for start yet)
-            # But wait, if we are in a loop for noise, we are filling a buffer.
-            # For effects, we just take the next 'take' samples and add them to mixed[:take]
-            
-            mixed[:take] += effect_chunk * vol
-            
-            effect['index'] += take
-            
-            if effect['index'] >= effect_len:
-                self.active_effects.pop(i)
-
-        # 4. Clip and Output
-        np.clip(mixed, -1, 1, out=mixed)
+        # 6. Limiting and Master Output
+        np.clip(mixed, -1.0, 1.0, out=mixed)
         outdata[:] = mixed
+
         if mixed.size:
             self.last_output_level = float(np.sqrt(np.mean(np.square(mixed))))
         else:
             self.last_output_level = 0.0
+
+        # 7. Push to Monitor (Headphones) buffer if monitoring is enabled
+        if self.monitor_enabled and self.monitor_stream:
+            with self.monitor_lock:
+                self.monitor_buffer.append(mixed.copy())
+
+    def monitor_callback(self, outdata, frames, time_info, status):
+        """Callback for real-time headphone monitoring stream."""
+        channels = outdata.shape[1]
+        out = np.zeros((frames, channels), dtype=np.float32)
+
+        with self.monitor_lock:
+            if self.monitor_buffer:
+                chunk = self.monitor_buffer.popleft()
+                take = min(frames, len(chunk))
+                if chunk.shape[1] == channels:
+                    out[:take] = chunk[:take]
+                elif chunk.shape[1] == 1 and channels == 2:
+                    out[:take] = np.tile(chunk[:take], (1, 2))
+                else:
+                    min_ch = min(chunk.shape[1], channels)
+                    out[:take, :min_ch] = chunk[:take, :min_ch]
+
+        out *= self.monitor_volume
+        np.clip(out, -1.0, 1.0, out=out)
+        outdata[:] = out
 
     def start(self):
         if self.running:
@@ -250,43 +284,122 @@ class AudioEngine:
             
         self.running = True
         try:
-            # Check device capabilities to match channels
-            in_info = sd.query_devices(self.input_device_id)
+            # Check devices and determine channels
             out_info = sd.query_devices(self.output_device_id)
-            
-            # Determine channels (min of both)
-            channels = min(in_info['max_input_channels'], out_info['max_output_channels'])
-            
-            print(f"Starting stream with {channels} channels...")
-            
-            # Create and start the stream
-            self.stream = sd.Stream(device=(self.input_device_id, self.output_device_id),
-                                   samplerate=self.sample_rate,
-                                   blocksize=self.block_size,
-                                   channels=channels,
-                                   callback=self.callback)
+            out_channels = min(2, out_info['max_output_channels'])
+            if out_channels < 1:
+                out_channels = 2
+
+            # Start App Mixers
+            if self.app_mixer:
+                self.app_mixer.start_all()
+
+            # Input stream configuration
+            in_channels = 0
+            if self.input_device_id is not None and self.input_device_id >= 0:
+                try:
+                    in_info = sd.query_devices(self.input_device_id)
+                    in_channels = min(2, in_info['max_input_channels'])
+                except Exception:
+                    in_channels = 0
+
+            print(f"Starting SoundX Router Stream: In={self.input_device_id} ({in_channels} ch), Out={self.output_device_id} ({out_channels} ch) @ {self.sample_rate}Hz")
+
+            if in_channels > 0:
+                self.stream = sd.Stream(
+                    device=(self.input_device_id, self.output_device_id),
+                    samplerate=self.sample_rate,
+                    blocksize=self.block_size,
+                    latency='low',
+                    channels=(in_channels, out_channels),
+                    callback=self.callback
+                )
+            else:
+                # Output only (no microphone, only apps & sounds)
+                def output_only_callback(outdata, frames, time_info, status):
+                    self.callback(None, outdata, frames, time_info, status)
+
+                self.stream = sd.OutputStream(
+                    device=self.output_device_id,
+                    samplerate=self.sample_rate,
+                    blocksize=self.block_size,
+                    latency='low',
+                    channels=out_channels,
+                    callback=output_only_callback
+                )
+
             self.stream.start()
-            print("Audio stream started.")
-            
+
+            # Start Headphone Monitoring Stream if enabled
+            if self.monitor_enabled and self.monitor_device_id is not None:
+                self._start_monitor_stream()
+
+            print("SoundX Router Engine started successfully.")
         except Exception as e:
-            print(f"\nError starting stream: {e}")
+            print(f"Error starting audio engine: {e}")
             self.running = False
+            if self.app_mixer:
+                self.app_mixer.stop_all()
             raise e
+
+    def _start_monitor_stream(self):
+        try:
+            mon_info = sd.query_devices(self.monitor_device_id)
+            mon_channels = min(2, mon_info['max_output_channels'])
+            self.monitor_stream = sd.OutputStream(
+                device=self.monitor_device_id,
+                samplerate=self.sample_rate,
+                blocksize=self.block_size,
+                latency='low',
+                channels=mon_channels,
+                callback=self.monitor_callback
+            )
+            self.monitor_stream.start()
+            print(f"Monitor stream started on device {self.monitor_device_id}.")
+        except Exception as e:
+            print(f"Error starting monitor stream: {e}")
+            self.monitor_stream = None
+
+    def _stop_monitor_stream(self):
+        if self.monitor_stream:
+            try:
+                self.monitor_stream.stop()
+                self.monitor_stream.close()
+            except Exception:
+                pass
+            self.monitor_stream = None
+
+    def set_monitor(self, enabled: bool, device_id: int = None, volume: float = 1.0):
+        self.monitor_enabled = bool(enabled)
+        self.monitor_volume = float(volume)
+        if device_id is not None:
+            self.monitor_device_id = int(device_id)
+
+        if self.running:
+            if self.monitor_enabled and not self.monitor_stream and self.monitor_device_id is not None:
+                self._start_monitor_stream()
+            elif not self.monitor_enabled and self.monitor_stream:
+                self._stop_monitor_stream()
 
     def stop(self):
         if not self.running:
             return
             
-        print("Stopping stream...")
+        print("Stopping SoundX Router Engine...")
         self.running = False
+
+        if self.app_mixer:
+            self.app_mixer.stop_all()
+
+        self._stop_monitor_stream()
+
         if self.stream:
-            self.stream.stop()
-            self.stream.close()
+            try:
+                self.stream.stop()
+                self.stream.close()
+            except Exception:
+                pass
             self.stream = None
 
-if __name__ == "__main__":
-    # Test with default devices if run directly
-    print("Running AudioEngine test with default devices...")
-    engine = AudioEngine(input_device_id=sd.default.device[0], 
-                         output_device_id=sd.default.device[1])
-    engine.start()
+        with self.monitor_lock:
+            self.monitor_buffer.clear()

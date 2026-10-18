@@ -5,3 +5,6 @@ flask
 PyQt5
 PyQtWebEngine
 keyboard
+proc-tap
+pycaw
+psutil

@@ -11,6 +11,12 @@ from PyQt5.QtCore import Qt, QUrl, QPoint, pyqtSlot, QObject, pyqtSignal
 from PyQt5.QtGui import QIcon
 from audio_manager import AudioManager
 
+# --- Windowed Environment Output Protection ---
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, 'w', encoding='utf-8')
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, 'w', encoding='utf-8')
+
 # --- Flask App Setup ---
 if sys.platform.startswith("win"):
     try:
@@ -27,34 +33,98 @@ else:
     app = Flask(__name__)
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+@app.after_request
+def add_cache_headers(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
 manager = AudioManager()
-SOUNDS_DIR = os.path.join(os.getcwd(), "sounds")
-PRESETS_FILE = os.path.join(os.getcwd(), "presets.json")
+EXE_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+SOUNDS_DIR = os.path.join(EXE_DIR, "sounds")
+PRESETS_FILE = os.path.join(EXE_DIR, "presets.json")
+CONFIG_FILE = os.path.join(EXE_DIR, "config.json")
 APP_ICON_PATH = os.path.join(BASE_DIR, "static", "logo.png")
-CURRENT_VERSION = "1.0"
-UPDATE_URL = "https://api.github.com/repos/eYushaa/SoundXRouter/releases/latest" # Example URL
+CURRENT_VERSION = "V1.0.1"
+UPDATE_URL = "https://api.github.com/repos/eYushaa/SoundXRouter/releases/latest"
+
+def load_config():
+    defaults = {
+        "driver_name": None,
+        "driver_index": None,
+        "input_name": None,
+        "input_id": None,
+        "output_name": "CABLE Input (VB-Audio Virtual Cable)",
+        "output_id": None,
+        "monitor_name": None,
+        "monitor_id": None,
+        "monitor_enabled": False,
+        "monitor_volume": 80,
+        "mic_volume": 100,
+        "mic_muted": False,
+        "volume": 20,
+        "active_apps": []
+    }
+    if not os.path.exists(CONFIG_FILE):
+        return defaults
+    try:
+        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            cfg = json.load(f)
+            defaults.update(cfg)
+            return defaults
+    except Exception as e:
+        print(f"Error loading config.json: {e}")
+        return defaults
+
+def save_config(updates):
+    cfg = load_config()
+    if isinstance(updates, dict):
+        cfg.update(updates)
+    try:
+        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(cfg, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Error saving config.json: {e}")
+    return cfg
+
+def sync_saved_apps():
+    states = manager.get_app_states()
+    saved = [
+        {
+            "name": s["name"],
+            "raw_name": s.get("raw_name", s["name"]),
+            "volume": s["volume"],
+            "muted": s["muted"]
+        }
+        for s in states
+    ]
+    save_config({"active_apps": saved})
 
 @app.route('/api/version')
 def get_version():
     return jsonify({"version": CURRENT_VERSION})
 
+@app.route('/api/config/get', methods=['GET'])
+def api_get_config():
+    return jsonify(load_config())
+
+@app.route('/api/config/save', methods=['POST'])
+def api_save_config():
+    data = request.json or {}
+    updated = save_config(data)
+    return jsonify({"status": "ok", "config": updated})
+
 @app.route('/api/check_update')
 def check_update():
-    # In a real app, you would fetch UPDATE_URL and compare versions.
-    # For now, we simulate an update is available to show the flow.
     try:
-        # Simulation:
-        # import requests
-        # res = requests.get(UPDATE_URL)
-        # latest = res.json()["tag_name"]
-        # if latest != CURRENT_VERSION: ...
-        
-        # SIMULATING UPDATE AVAILABLE
         return jsonify({
             "current": CURRENT_VERSION,
             "latest": "1.1", 
             "update_available": True,
-            "download_url": "https://github.com/eYushaa/SoundXRouter/releases/latest", # Example
+            "download_url": "https://github.com/eYushaa/SoundXRouter/releases/latest",
             "message": "New version 1.1 is available!"
         })
     except Exception as e:
@@ -88,10 +158,20 @@ def index():
 
 @app.route('/api/init')
 def init_data():
+    cfg = load_config()
+    # If app mixer has no active sources, restore saved apps
+    if not manager.get_app_states() and cfg.get("active_apps"):
+        manager.restore_saved_apps(cfg["active_apps"])
+
     return jsonify({
+        "config": cfg,
         "host_apis": manager.get_host_apis(),
         "devices": manager.get_devices(),
-        "sounds": get_sound_files()
+        "sounds": get_sound_files(),
+        "soundx_info": manager.get_soundx_info(),
+        "app_states": manager.get_app_states(),
+        "available_apps": manager.get_available_apps(),
+        "is_running": manager.get_status() == "running"
     })
 
 @app.route('/api/sounds')
@@ -108,13 +188,38 @@ def get_sound_files():
 def start_engine():
     data = request.json
     manager.stop_preview()
+    input_id = data.get('input_id')
+    output_id = data.get('output_id')
+    monitor_id = data.get('monitor_id')
+    vol = data.get('volume', 20)
+    mic_vol = data.get('mic_volume', 100)
+    mon_enabled = data.get('monitor_enabled', False)
+    mon_vol = data.get('monitor_volume', 100)
+    
     manager.set_config(
-        data['input_id'],
-        data['output_id'],
-        os.path.join(SOUNDS_DIR, data['sound']) if data['sound'] else None,
-        data['volume']
+        input_id=input_id,
+        output_id=output_id,
+        noise_path=os.path.join(SOUNDS_DIR, data['sound']) if data.get('sound') else None,
+        volume=vol,
+        mic_volume=mic_vol,
+        monitor_id=monitor_id,
+        monitor_enabled=mon_enabled,
+        monitor_volume=mon_vol
     )
     result = manager.start()
+    
+    save_config({
+        "input_id": input_id,
+        "input_name": manager.get_device_name(input_id) if input_id is not None else None,
+        "output_id": output_id,
+        "output_name": manager.get_device_name(output_id) if output_id is not None else None,
+        "monitor_id": monitor_id,
+        "monitor_name": manager.get_device_name(monitor_id) if monitor_id is not None else None,
+        "monitor_enabled": mon_enabled,
+        "monitor_volume": mon_vol,
+        "volume": vol,
+        "mic_volume": mic_vol
+    })
     return jsonify(result)
 
 @app.route('/api/stop', methods=['POST'])
@@ -124,9 +229,114 @@ def stop_engine():
 @app.route('/api/update_volume', methods=['POST'])
 def update_volume():
     data = request.json
+    vol = float(data.get('volume', 20))
     if manager.engine and manager.engine.running:
-        manager.engine.noise_volume = float(data['volume']) / 100.0
+        manager.engine.noise_volume = vol / 100.0
+    save_config({"volume": vol})
     return jsonify({"status": "ok"})
+
+@app.route('/api/apps/available', methods=['GET'])
+def get_available_apps():
+    return jsonify(manager.get_available_apps())
+
+@app.route('/api/apps/add', methods=['POST'])
+def add_app():
+    data = request.json
+    pid = int(data.get('pid'))
+    name = data.get('name', f'Process_{pid}')
+    raw_name = data.get('raw_name', '')
+    volume = float(data.get('volume', 1.0))
+    res = manager.add_app(pid, name, volume, raw_name=raw_name)
+    sync_saved_apps()
+    return jsonify(res)
+
+@app.route('/api/apps/remove', methods=['POST'])
+def remove_app():
+    data = request.json
+    pid = int(data.get('pid'))
+    res = manager.remove_app(pid)
+    sync_saved_apps()
+    return jsonify(res)
+
+@app.route('/api/apps/volume', methods=['POST'])
+def set_app_volume():
+    data = request.json
+    pid = int(data.get('pid'))
+    volume = float(data.get('volume', 1.0))
+    res = manager.set_app_volume(pid, volume)
+    sync_saved_apps()
+    return jsonify(res)
+
+@app.route('/api/apps/mute', methods=['POST'])
+def set_app_mute():
+    data = request.json
+    pid = int(data.get('pid'))
+    muted = bool(data.get('muted', False))
+    res = manager.set_app_mute(pid, muted)
+    sync_saved_apps()
+    return jsonify(res)
+
+@app.route('/api/apps/states', methods=['GET'])
+def get_app_states():
+    return jsonify(manager.get_app_states())
+
+@app.route('/api/soundx/register', methods=['POST'])
+def register_soundx():
+    res = manager.register_soundx_device()
+    return jsonify(res)
+
+@app.route('/api/open_sound_control_panel', methods=['POST'])
+def open_sound_control_panel():
+    import subprocess
+    try:
+        subprocess.Popen(['control', 'mmsys.cpl', 'sounds'])
+    except Exception as e:
+        print(f"Error opening control panel: {e}")
+    return jsonify({"status": "ok"})
+
+@app.route('/api/routing/test_tone', methods=['POST'])
+def test_routing_tone():
+    data = request.json or {}
+    out_id = data.get('output_id')
+    res = manager.play_test_routing_tone(out_id)
+    return jsonify(res)
+
+@app.route('/api/routing/info', methods=['GET'])
+def get_routing_info():
+    info = manager.get_soundx_info()
+    return jsonify(info)
+
+
+@app.route('/api/mic/volume', methods=['POST'])
+def set_mic_volume():
+    data = request.json
+    vol = float(data.get('volume', 100))
+    res = manager.set_mic_volume(vol)
+    save_config({"mic_volume": vol})
+    return jsonify(res)
+
+@app.route('/api/mic/mute', methods=['POST'])
+def set_mic_mute():
+    data = request.json
+    muted = bool(data.get('muted', False))
+    res = manager.set_mic_mute(muted)
+    save_config({"mic_muted": muted})
+    return jsonify(res)
+
+@app.route('/api/monitor/set', methods=['POST'])
+def set_monitor():
+    data = request.json
+    enabled = bool(data.get('enabled', False))
+    dev_id = data.get('device_id')
+    volume = float(data.get('volume', 100))
+    res = manager.set_monitor(enabled, dev_id, volume)
+    save_config({
+        "monitor_enabled": enabled,
+        "monitor_id": dev_id,
+        "monitor_name": manager.get_device_name(dev_id) if dev_id is not None else None,
+        "monitor_volume": volume
+    })
+    return jsonify(res)
 
 @app.route('/api/open_folder')
 def open_folder():
@@ -163,9 +373,18 @@ def play_effect():
     res = manager.play_effect(sound_path, volume)
     return jsonify(res)
 
+@app.route('/api/status', methods=['GET'])
+def get_engine_status():
+    return jsonify({
+        "status": manager.get_status(),
+        "is_running": manager.get_status() == "running"
+    })
+
 @app.route('/api/meters')
 def get_meters():
-    return jsonify(manager.get_levels())
+    levels = manager.get_levels()
+    levels["is_running"] = manager.get_status() == "running"
+    return jsonify(levels)
 
 @app.route('/api/presets', methods=['GET'])
 def list_presets():
@@ -279,7 +498,7 @@ class ModernWindow(QMainWindow):
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setWindowTitle("SoundX Router")
-        self.resize(900, 650)
+        self.resize(1180, 760)
 
         if os.path.exists(APP_ICON_PATH):
             self.setWindowIcon(QIcon(APP_ICON_PATH))

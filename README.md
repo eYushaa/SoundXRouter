@@ -2,13 +2,13 @@
 
 <div align="center">
 
-**The Ultimate Audio Routing & Mixing Tool for Streamers, Gamers, and RVC Enthusiasts.**  
-*Yayıncılar, Oyuncular ve RVC Tutkunları için Nihai Ses Yönlendirme ve Miksleme Aracı.*
+**The Ultimate Studio Audio Routing & Mixing Tool for Streamers, Gamers, and Creators.**  
+*Yayıncılar, Oyuncular ve İçerik Üreticileri için Gelişmiş Stüdyo Ses Yönlendirme ve Miksleme Aracı.*
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows-win.svg)](https://www.microsoft.com/windows)
-[![Download](https://img.shields.io/badge/Download-Latest_Release-blueviolet)](https://github.com/eYushaa/SoundXRouter/releases/latest)
+[![Download](https://img.shields.io/badge/Download-V1.0.1_Single_EXE-blueviolet)](https://github.com/eYushaa/SoundXRouter/releases/latest)
 
 </div>
 
@@ -19,98 +19,90 @@
 
 ## 🚀 What is SoundX Router?
 
-**SoundX Router** is not just another audio tool; it's the command center for your digital voice. In the modern streaming and gaming landscape, managing audio inputs, AI voice changers (RVC), and sound effects can be a nightmare of virtual cables and latency.
+**SoundX Router** is a modern, high-performance studio audio routing middleware and mixer for Windows. It acts as the central command bridge between your physical microphone (or AI voice changer like RVC / Voicemod), your running applications (Spotify, Chrome, Discord, Games), and your target streaming software (Discord, OBS Studio, Games, Windows Voice Recorder).
 
-**SoundX Router solves this.** It acts as a high-performance middleware that sits between your microphone (or RVC output) and your streaming software (OBS/Discord). It allows you to:
-1.  **Inject** background ambience and music into your voice stream.
-2.  **Trigger** sound effects with global hotkeys.
-3.  **Route** the final mix to a virtual microphone.
-4.  **Monitor** everything in real-time with zero latency.
+### 💡 Core Capabilities:
+1. **Multi-Application Audio Mixer:** Capture and mix audio simultaneously from multiple running applications into your microphone feed with independent faders, mute controls, and VU meters.
+2. **Smart Virtual Microphone Routing:** Easily route your final studio mix to **SteelSeries Sonar - Microphone**, **VB-Audio Virtual Cable**, or any virtual microphone driver.
+3. **One-Click Target Device Copy:** Copy the exact device name to select as your microphone in Discord, OBS, or Windows Voice Recorder with one click.
+4. **Smart Zero-Feedback Headphone Monitoring:** Listen to the live mix in your real headphones without feedback loops or audio leakage.
+5. **Audio Driver System:** Supports **Windows DirectSound**, **MME**, **Windows WASAPI**, and **WDM-KS**.
+6. **Live Multi-Channel VU Meters & Oscilloscope:** Real-time audio waveform animation and volume meters for Mic In, Apps Mix, and Master Out.
+7. **Configuration Presets & Auto-Persistence:** Switch between different audio setups with 1-click presets; last used devices and volumes are automatically restored on launch.
+8. **Integrated Soundboard:** Trigger background ambience or sound effects with global hotkeys even while in full-screen games.
 
-All of this is wrapped in a stunning **Liquid Glass UI** that looks as good as it sounds.
+---
 
-## ✨ Key Features
+## ✨ Key Features in Detail
 
-### 🎛️ Professional Audio Routing
-- **Device Agnostic:** Works with any input (Microphone, Cable Output, RVC) and any output (Speakers, Cable Input).
-- **Low Latency Engine:** Built on `sounddevice` and `numpy` for real-time DSP (Digital Signal Processing) with minimal delay.
-- **Smart Mixing:** Automatically ducks background noise when sound effects are triggered (optional).
+### 🎛️ Real-Time Multi-Application Audio Mixer
+- **Dynamic Application Discovery:** Automatically detects currently playing and running audio processes.
+- **Smart Filtering:** Switch between **"Playing"** (active audio output) and **"All"** running apps.
+- **Clean Application Names:** Formatted friendly names without ugly `.exe` extensions.
+- **Independent Channels:** Dedicated volume control (0-150%), instant mute toggle, and live VU meters for every app.
+- **Auto-Restoration:** Your mixed application list, volume levels, and mute states are saved and restored automatically across restarts.
 
-### 🎹 Integrated Soundboard
-- **Drag & Drop:** Just drop your `.mp3`, `.wav`, or `.ogg` files into the `sounds/` folder.
-- **Global Hotkeys:** Bind any sound to any key (e.g., `Numpad 1`, `Ctrl+F1`). Works even when you are in-game!
-- **Loop & One-Shot:** Toggle sounds to loop forever (ambience) or play once (effects).
+### 🎙️ Advanced Routing & Virtual Device Bridge
+- **Dynamic Detection:** Automatically detects VB-Cable, SteelSeries Sonar, Voicemod, and standard audio endpoints.
+- **Discord & OBS Quick Setup:** View direct status and copy the active microphone name (`SteelSeries Sonar - Microphone` or `CABLE Output`).
+- **Test Tone (Chime):** Send a test chime to the Master Output to verify your Discord or OBS microphone input meter with zero hassle.
+- **Feedback Loop Hazard Protection:** Automatically detects if the same virtual cable is chosen for input and output, displaying an alert to prevent feedback screeching.
 
-### 🎧 Smart Preview System
-- **The Problem:** Usually, if you want to hear your effects, you have to route them to your speakers, which causes feedback loops or double audio on stream.
-- **The Solution:** SoundX Router's **Smart Preview** lets you hear the final mix in your headphones *without* sending that monitoring audio back into the microphone feed.
+### 🎧 Zero-Feedback Headphone Monitoring (Smart Preview)
+- **The Problem:** Hearing what Discord hears usually requires routing audio to speakers, creating echo and feedback loops.
+- **The Solution:** Smart Preview sends the mixed audio directly to your real headphones on a dedicated stream without routing back into the microphone.
+- **Dedicated Volume:** Adjust monitor volume independently from the master stream.
 
-### 🎨 Liquid Glass UI
-- **Modern Aesthetics:** A fully transparent, blur-backed interface (Glassmorphism) that blends into your desktop.
-- **Reactive Visuals:** The "Reactive Aura" and Waveform visualizers pulse and move in sync with your voice intensity.
-- **User Experience:** Smooth animations, toast notifications, and intuitive controls.
+### 💾 Presets & Instant State Restoration
+- Save and load complete routing setups (driver, input mic, master output, monitor output, volume levels).
+- Persistent state: The app remembers your last selected devices, active apps, and slider settings automatically in `config.json`.
 
-## 🛠️ Installation
+### 🎨 Liquid Glass Studio UI
+- Frameless, translucent Glassmorphism interface with smooth gradients and micro-animations.
+- Fluid responsive layout with spacious controls, clear button spacing, and no distracting focus outlines.
 
-### Prerequisites
-- **OS:** Windows 10 or 11
-- **Python:** Version 3.10 or higher
-- **Virtual Cable:** Recommended (e.g., VB-Audio Cable) to route audio to Discord/OBS.
+---
 
-### 📦 Method 1: Portable (Recommended)
-1.  Go to the [Releases](https://github.com/eYushaa/SoundXRouter/releases) page.
-2.  Download the latest `SoundXRouter_vX.X.zip`.
-3.  Extract the ZIP file.
-4.  Run `SoundXRouter.exe`.
+## 🛠️ Installation & Quick Start
 
-### ⚡ Method 2: Quick Start (Source)
-1.  Clone the repository.
-2.  Run `install.bat` to install dependencies automatically.
-3.  Run `start.bat` to launch the application.
+### 📦 Standalone Portable Executable (Recommended)
+1. Download `SoundXRouter.exe` from the [Releases](https://github.com/eYushaa/SoundXRouter/releases) page.
+2. Place it in any folder and run `SoundXRouter.exe` — **no installation required!**
+3. Select your input microphone and target output (e.g. `SteelSeries Sonar - Microphone` or `CABLE Output`).
+4. Click **START ROUTING** to begin!
 
-### 🛠️ Method 3: Manual Installation (Advanced)
+### ⚡ Running from Source
+```bash
+# 1. Clone repository
+git clone https://github.com/eYushaa/SoundXRouter.git
+cd SoundXRouter
 
-1.  **Clone the Repository:**
-    ```bash
-    git clone https://github.com/eYushaa/SoundXRouter.git
-    cd SoundXRouter
-    ```
+# 2. Install dependencies
+pip install -r requirements.txt
 
-2.  **Set Up Virtual Environment (Optional but Recommended):**
-    ```bash
-    python -m venv venv
-    .\venv\Scripts\activate
-    ```
+# 3. Launch application
+python app.py
+```
 
-3.  **Install Dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+---
 
-4.  **Run the Application:**
-    ```bash
-    python app.py
-    ```
+## 🎮 Recommended Setup for Discord / OBS
 
-## 🎮 Usage Scenarios
+| SoundX Router Setting | Your Selection in SoundX Router | In Discord / OBS Microphone Input |
+|---|---|---|
+| **Input (Microphone)** | Your USB Microphone or `CABLE Output` | — |
+| **Master Virtual Output** | `SteelSeries Sonar - Microphone` or `CABLE Output` | Select the same device as your **Microphone / Input** |
+| **Headphone Monitoring** | Your Physical Headphones / Speakers | Select your real headphones |
 
-### 🎙️ For RVC (AI Voice) Users
-1.  Set your RVC software output to **"CABLE Input"**.
-2.  In SoundX Router, set **Input Device** to **"CABLE Output"**.
-3.  Set **Output Device** to another virtual cable (e.g., **"CABLE-B Input"**) or **"SteelSeries Sonar Microphone"**.
-4.  Now you can add background rain, lo-fi music, or sound effects on top of your AI voice!
-
-### 🎥 For Streamers
-1.  Route your microphone through SoundX Router.
-2.  Use the **Soundboard** to trigger funny sounds during your stream.
-3.  Use **Presets** to switch between "Just Chatting" (light background music) and "Gaming" (no music, just effects) modes instantly.
+---
 
 ## 🔧 Technical Architecture
 
-- **Backend:** Python Flask serves as the local API server.
-- **Audio Engine:** A custom-threaded engine using `sounddevice` for raw stream manipulation and `numpy` for mixing.
-- **Frontend:** A Single Page Application (SPA) built with HTML5, CSS3, and Vanilla JS, served via `PyQtWebEngine`.
-- **Inter-Process Communication:** The frontend communicates with the Python backend via REST API calls (`/api/...`).
+- **Backend:** Python Flask API server running in a background thread.
+- **GUI & Web View:** Built with `PyQt5` + `PyQtWebEngine` (Chromium-based), using dynamic cache-busting headers.
+- **Audio Engine:** Low-latency stream processing with `sounddevice` and `numpy`.
+- **Application Audio Capture:** Real-time per-process loopback capture powered by `proctap` and `pycaw`.
+- **Packaging:** Standalone single-file Windows executable created with `PyInstaller`.
 
 </details>
 
@@ -121,98 +113,88 @@ All of this is wrapped in a stunning **Liquid Glass UI** that looks as good as i
 
 ## 🚀 SoundX Router Nedir?
 
-**SoundX Router**, sıradan bir ses aracı değildir; dijital sesiniz için bir komuta merkezidir. Modern yayıncılık ve oyun dünyasında, ses girişlerini, Yapay Zeka ses değiştiricilerini (RVC) ve ses efektlerini yönetmek, sanal kablolar ve gecikme sorunlarıyla dolu bir kabusa dönüşebilir.
+**SoundX Router**, Windows için geliştirilmiş modern, yüksek performanslı bir stüdyo ses yönlendirme ve miksleme aracıdır. Fiziksel mikrofonunuz (veya RVC / Voicemod gibi yapay zeka ses değiştiriciniz), çalışan uygulamalarınız (Spotify, Chrome, Discord, Oyunlar) ve yayın/ses kayıt yazılımlarınız (Discord, OBS Studio, Oyunlar, Windows Ses Kaydedici) arasında akıllı bir ses köprüsü kurar.
 
-**SoundX Router bunu çözer.** Mikrofonunuz (veya RVC çıkışınız) ile yayın yazılımınız (OBS/Discord) arasında duran yüksek performanslı bir ara katman görevi görür. Şunları yapmanızı sağlar:
-1.  **Entegre Et:** Ses akışınıza arka plan ambiyansı ve müzik ekleyin.
-2.  **Tetikle:** Global kısayol tuşlarıyla ses efektlerini ateşleyin.
-3.  **Yönlendir:** Son miksi sanal bir mikrofona aktarın.
-4.  **Dinle:** Her şeyi sıfır gecikmeyle gerçek zamanlı olarak takip edin.
+### 💡 Temel Yetenekler:
+1. **Çoklu Uygulama Ses Mikseri:** İstediğiniz uygulamaların sesini aynı anda mikrofon akışınıza miksleyin; her uygulama için bağımsız ses ayarı, sessize alma (Mute) ve canlı seviye göstergesi.
+2. **Akıllı Sanal Mikrofon Yönlendirmesi:** Miksi **SteelSeries Sonar - Microphone**, **VB-Audio Virtual Cable** veya diğer sanal mikrofon sürücülerine doğrudan aktarın.
+3. **Tek Tıkla Aygıt Adı Kopyalama:** Discord veya OBS'de seçmeniz gereken mikrofon aygıt adını tek tıkla kopyalayın.
+4. **Sıfır Geri Besleme (Feedback) Kulaklık İzleme:** Son miksi, mikrofona yankı veya döngü yapmadan doğrudan gerçek kulaklığınızdan dinleyin.
+5. **Ses Sürücü Desteği:** **Windows DirectSound**, **MME**, **Windows WASAPI** ve **WDM-KS** sürücüleri arasında kolay geçiş.
+6. **Canlı Çok Kanallı VU Metreler & Osiloskop:** Alt panelde canlı dalga formu görselleştiricisi ile Mic In, Apps Mix ve Master Out ses seviye göstergeleri.
+7. **Yapılandırma Presetleri & Otomatik Kayıt:** Farklı ses düzenlerinizi preset olarak kaydedin; son seçtiğiniz aygıtlar ve ses seviyeleri uygulama her açıldığında otomatik olarak geri yüklenir.
+8. **Entegre Soundboard:** `sounds/` klasöründeki ses efektlerini global kısayol tuşlarıyla oyundayken bile tetikleyin.
 
-Tüm bunlar, göründüğü kadar iyi duyulan muhteşem bir **Liquid Glass (Sıvı Cam)** arayüzü içinde sunulur.
+---
 
 ## ✨ Öne Çıkan Özellikler
 
-### 🎛️ Profesyonel Ses Yönlendirme
-- **Cihaz Bağımsız:** Herhangi bir giriş (Mikrofon, Cable Output, RVC) ve herhangi bir çıkış (Hoparlör, Cable Input) ile çalışır.
-- **Düşük Gecikme Motoru:** `sounddevice` ve `numpy` kullanılarak minimum gecikme ile gerçek zamanlı DSP (Dijital Sinyal İşleme) yapılır.
-- **Akıllı Miksleme:** Ses efektleri çaldığında arka plan gürültüsünü otomatik olarak kısar (opsiyonel).
+### 🎛️ Gerçek Zamanlı Çoklu Uygulama Mikseri
+- **Dinamik Uygulama Tarama:** Ses çalan uygulamaları otomatik tespit eder.
+- **Akıllı Filtreleme:** **"Playing"** (sadece ses oynatanlar) ve **"All"** (tüm uygulamalar) modları arasında geçiş yapabilirsiniz.
+- **Temiz Uygulama Adları:** Çirkin `.exe` uzantıları gizlenir, uygulamanın gerçek ve temiz adı gösterilir.
+- **Ayrı Kanallar:** Her uygulama için %0-150 arası ses seviyesi, tek tıkla Mute ve gerçek zamanlı seviye göstergesi.
+- **Kalıcı Durum:** Mikse eklediğiniz uygulamalar, ses düzeyleri ve sessiz durumları uygulama yeniden başlatıldığında otomatik hatırlanır.
 
-### 🎹 Entegre Soundboard
-- **Sürükle & Bırak:** `.mp3`, `.wav` veya `.ogg` dosyalarınızı `sounds/` klasörüne atmanız yeterli.
-- **Global Kısayollar:** Herhangi bir sesi herhangi bir tuşa atayın (örn: `Numpad 1`, `Ctrl+F1`). Oyundayken bile çalışır!
-- **Döngü & Tek Seferlik:** Sesleri sonsuz döngüye alın (ambiyans için) veya tek seferlik çalın (efektler için).
+### 🎙️ Gelişmiş Ses Yönlendirme & Sanal Köprü
+- **Otomatik Aygıt Tespiti:** VB-Cable, SteelSeries Sonar ve diğer sanal sürücüleri otomatik algılar.
+- **Test Sesi Gönder:** Master Çıkış'a tek tıkla test sesi göndererek Discord veya OBS'deki mikrofon seviye çubuğunu anında test edin.
+- **Döngü (Loop) Koruması:** Giriş ve çıkışta aynı kablo seçildiğinde kullanıcıyı uyararak kulak zarını rahatsız eden geri besleme seslerini engeller.
 
-### 🎧 Akıllı Önizleme Sistemi
-- **Sorun:** Genellikle efektlerinizi duymak isterseniz, bunları hoparlörünüze yönlendirmeniz gerekir; bu da yayında yankı veya çift ses sorununa yol açar.
-- **Çözüm:** SoundX Router'ın **Akıllı Önizleme** özelliği, son miksi yayına giden sesi bozmadan *sadece* kulaklığınızdan duymanızı sağlar.
+### 🎧 Sıfır Gecikmeli Kulaklık Önizleme (Smart Preview)
+- Yayına veya Discord'a giden sesi, mikrofon yayınına geri besleme yapmadan doğrudan kulaklığınızdan önizleyin.
+- Ayrı kulaklık ses kontrol çubuğu ile izleme seviyesini dilediğiniz gibi ayarlayın.
 
-### 🎨 Liquid Glass Arayüzü
-- **Modern Estetik:** Masaüstünüzle bütünleşen, tamamen şeffaf, arkası bulanık (Glassmorphism) bir arayüz.
-- **Reaktif Görseller:** Sesinizin şiddetiyle senkronize olarak parlayan ve hareket eden "Reaktif Aura" ve Dalga Formu görselleştirmeleri.
-- **Kullanıcı Deneyimi:** Akıcı animasyonlar, bildirimler ve sezgisel kontroller.
+### 💾 Presetler ve Otomatik Ayar Hatırlama
+- Tek tıkla Preset kaydetme ve geri yükleme.
+- `config.json` dosyası sayesinde seçtiğiniz sürücü, mikrofon, çıkış aygıtı ve ses düzeyleri otomatik olarak kaydedilir ve her açılışta korunur.
 
-## 🛠️ Kurulum
+### 🎨 Sıvı Cam (Liquid Glass) Stüdyo Arayüzü
+- Şeffaf, bulanıklık efektli (Glassmorphism), modern ve ferah tasarım.
+- Tuşlar ve form alanları arasında ferah boşluklar ve pürüzsüz geçişler.
 
-### Gereksinimler
-- **İşletim Sistemi:** Windows 10 veya 11
-- **Python:** Sürüm 3.10 veya üzeri
-- **Sanal Kablo:** Sesi Discord/OBS'e aktarmak için önerilir (örn: VB-Audio Cable).
+---
 
-### 📦 Yöntem 1: Taşınabilir (Önerilen)
-1.  [Releases](https://github.com/eYushaa/SoundXRouter/releases) sayfasına gidin.
-2.  En son sürüm `SoundXRouter_vX.X.zip` dosyasını indirin.
-3.  ZIP dosyasını klasöre çıkartın.
-4.  `SoundXRouter.exe` dosyasını çalıştırın.
+## 🛠️ Kurulum & Çalıştırma
 
-### ⚡ Yöntem 2: Hızlı Başlangıç (Kaynak Kod)
-1.  Projeyi indirin (Clone).
-2.  `install.bat` dosyasına çift tıklayarak kütüphaneleri otomatik yükleyin.
-3.  `start.bat` dosyasına çift tıklayarak uygulamayı başlatın.
+### 📦 Tek Dosya Taşınabilir EXE (Önerilen)
+1. [Releases](https://github.com/eYushaa/SoundXRouter/releases) sayfasından `SoundXRouter.exe` dosyasını indirin.
+2. İstediğiniz klasöre koyun ve çift tıklayarak çalıştırın — **kurulum gerektirmez!**
+3. Mikrofonunuzu ve Master Çıkışınızı seçin.
+4. **START ROUTING** butonuna basarak ses aktarımını başlatın!
 
-### 🛠️ Yöntem 3: Manuel Kurulum (Gelişmiş)
+### ⚡ Kaynak Koddan Çalıştırma
+```bash
+# 1. Depoyu klonlayın
+git clone https://github.com/eYushaa/SoundXRouter.git
+cd SoundXRouter
 
-1.  **Depoyu Klonlayın:**
-    ```bash
-    git clone https://github.com/eYushaa/SoundXRouter.git
-    cd SoundXRouter
-    ```
+# 2. Gereksinimleri yükleyin
+pip install -r requirements.txt
 
-2.  **Sanal Ortam Oluşturun (Opsiyonel ama Önerilir):**
-    ```bash
-    python -m venv venv
-    .\venv\Scripts\activate
-    ```
+# 3. Uygulamayı başlatın
+python app.py
+```
 
-3.  **Gerekli Kütüphaneleri Yükleyin:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+---
 
-4.  **Uygulamayı Başlatın:**
-    ```bash
-    python app.py
-    ```
+## 🎮 Discord ve OBS Ayar Rehberi
 
-## 🎮 Kullanım Senaryoları
+| SoundX Router Ayarı | SoundX Router İçinde Seçilecek | Discord / OBS Mikrofon Ayarı |
+|---|---|---|
+| **Microphone / Primary Input** | USB Mikrofonunuz veya `CABLE Output` | — |
+| **Master Virtual Output** | `SteelSeries Sonar - Microphone` veya `CABLE Output` | Discord/OBS'de **Giriş Aygıtı (Mikrofon)** olarak aynı aygıtı seçin |
+| **Headphone Monitoring** | Gerçek Kulaklığınız / Hoparlörünüz | Gerçek kulaklığınızı seçin |
 
-### 🎙️ RVC (Yapay Zeka Ses) Kullanıcıları İçin
-1.  RVC yazılımınızın çıkışını **"CABLE Input"** olarak ayarlayın.
-2.  SoundX Router'da **Input Device** olarak **"CABLE Output"** seçin.
-3.  **Output Device** olarak başka bir sanal kablo (örn: **"CABLE-B Input"**) veya doğrudan Discord girişini seçin.
-4.  Artık yapay zeka sesinizin üzerine yağmur sesi, lo-fi müzik veya efektler ekleyebilirsiniz!
-
-### 🎥 Yayıncılar İçin
-1.  Mikrofonunuzu SoundX Router üzerinden geçirin.
-2.  Yayında komik anlar için **Soundboard**'u kullanın.
-3.  **Presetler** sayesinde "Sohbet" (hafif müzik) ve "Oyun" (sadece efektler) modları arasında anında geçiş yapın.
+---
 
 ## 🔧 Teknik Mimari
 
-- **Backend:** Python Flask, yerel API sunucusu olarak çalışır.
-- **Audio Engine:** Ham ses işleme için `sounddevice` ve miksaj için `numpy` kullanan özel iş parçacıklı (threaded) motor.
-- **Frontend:** HTML5, CSS3 ve Vanilla JS ile oluşturulmuş, `PyQtWebEngine` üzerinden sunulan Tek Sayfa Uygulaması (SPA).
-- **İletişim:** Arayüz ve Python arka ucu, REST API çağrıları (`/api/...`) ile haberleşir.
+- **Arka Uç:** Arka planda çalışan Python Flask REST API sunucusu.
+- **Arayüz:** `PyQt5` + `PyQtWebEngine` (Chromium motoru) ile çalışan modern Tek Sayfa Uygulaması (SPA).
+- **Ses Motoru:** `sounddevice` ve `numpy` ile sıfır gecikmeli çok kanallı ses işleme.
+- **Uygulama Ses Yakalama:** `proctap` ve `pycaw` tabanlı Windows WASAPI loopback yakalama.
+- **Dağıtım:** `PyInstaller` ile derlenmiş bağımsız tek parça Windows `.exe` dosyası.
 
 </details>
 

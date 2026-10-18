@@ -1,0 +1,21 @@
+# Audio files directory
+sounds/*
+!sounds/.gitkeep
+
+# PyInstaller build outputs
+dist/
+build/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Editor / IDE
+.vscode/
+.idea/

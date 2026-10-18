@@ -5,7 +5,11 @@ color 0b
 echo Starting SoundX Router...
 echo.
 
-python app.py
+if exist .venv\Scripts\python.exe (
+    .venv\Scripts\python.exe app.py
+) else (
+    python app.py
+)
 
 if %errorlevel% neq 0 (
     echo.

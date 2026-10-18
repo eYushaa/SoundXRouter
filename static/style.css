@@ -23,6 +23,37 @@
     padding: 0;
     -webkit-font-smoothing: antialiased;
     user-select: none;
+    outline: none !important;
+    -webkit-focus-ring-color: transparent !important;
+}
+
+*:focus,
+*:focus-visible,
+*:active {
+    outline: none !important;
+    outline-width: 0 !important;
+    outline-style: none !important;
+    outline-color: transparent !important;
+    -webkit-focus-ring-color: transparent !important;
+    -webkit-tap-highlight-color: transparent !important;
+    box-shadow: none !important;
+}
+
+button:focus,
+button:focus-visible,
+button:active,
+input:focus,
+input:focus-visible,
+select:focus,
+select:focus-visible,
+a:focus,
+a:focus-visible {
+    outline: none !important;
+    outline-width: 0 !important;
+    outline-style: none !important;
+    outline-color: transparent !important;
+    -webkit-focus-ring-color: transparent !important;
+    box-shadow: none !important;
 }
 
 html,

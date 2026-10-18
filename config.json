@@ -1,0 +1,16 @@
+{
+  "driver_name": "Windows DirectSound",
+  "driver_index": 1,
+  "input_name": "CABLE Output (VB-Audio Virtual Cable)",
+  "input_id": null,
+  "output_name": "SteelSeries Sonar - Microphone (SteelSeries Sonar Virtual Audio Device)",
+  "output_id": null,
+  "monitor_name": null,
+  "monitor_id": null,
+  "monitor_enabled": false,
+  "monitor_volume": 80,
+  "mic_volume": 100,
+  "mic_muted": false,
+  "volume": 20,
+  "active_apps": []
+}

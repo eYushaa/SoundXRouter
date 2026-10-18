@@ -4,13 +4,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SoundX Router</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>SoundX Router - Studio Audio Mixer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.0.1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='mixer.css') }}?v=1.0.1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            outline: none !important;
+            -webkit-tap-highlight-color: transparent !important;
+            -webkit-focus-ring-color: transparent !important;
+        }
+        *:focus, *:focus-visible, *:focus-within, *:active {
+            outline: none !important;
+            outline-width: 0 !important;
+            outline-style: none !important;
+            outline-color: transparent !important;
+            -webkit-focus-ring-color: transparent !important;
+            box-shadow: none !important;
+        }
+        button, input, select, textarea, [tabindex] {
+            outline: none !important;
+            -webkit-focus-ring-color: transparent !important;
+        }
+        button:focus, button:focus-visible, button:active,
+        .nav-tab:focus, .nav-tab:focus-visible, .nav-tab:active,
+        .action-btn:focus, .action-btn:focus-visible, .action-btn:active,
+        .app-icon-btn:focus, .app-icon-btn:focus-visible, .app-icon-btn:active,
+        .win-btn:focus, .win-btn:focus-visible, .win-btn:active {
+            outline: none !important;
+            outline-width: 0 !important;
+            outline-style: none !important;
+            outline-color: transparent !important;
+            -webkit-focus-ring-color: transparent !important;
+            box-shadow: none !important;
+        }
+    </style>
 </head>
 
 <body>
     <div class="glass-container">
+        <!-- Animated visual background -->
         <div class="background-blobs">
             <div class="blob blob-1"></div>
             <div class="blob blob-2"></div>
@@ -18,122 +51,344 @@
             <div class="reactive-aura" id="reactive-aura"></div>
         </div>
 
+        <!-- Header -->
         <header class="pywebview-drag-region">
-            <div class="logo">SoundX Router</div>
+            <div class="logo-area">
+                <div class="logo-badge">SX</div>
+                <div class="logo-title">SoundX <span>Router</span></div>
+                <span class="version-badge">V1.0.1</span>
+            </div>
+
+            <!-- Workspace Navigation Tabs -->
+            <nav class="nav-tabs">
+                <button class="nav-tab active" data-tab="apps" id="tab-btn-apps">
+                    <span class="tab-icon">🎛️</span>
+                    <span>App Mixer</span>
+                    <span class="tab-badge" id="apps-count-badge">0</span>
+                </button>
+                <button class="nav-tab" data-tab="devices" id="tab-btn-devices">
+                    <span class="tab-icon">🎙️</span>
+                    <span>Routing & Devices</span>
+                    <span class="soundx-pill" id="soundx-status-pill">SoundX Ready</span>
+                </button>
+                <button class="nav-tab" data-tab="soundboard" id="tab-btn-soundboard">
+                    <span class="tab-icon">🎹</span>
+                    <span>Soundboard</span>
+                </button>
+            </nav>
+
             <div class="header-controls">
                 <div class="status-indicator" id="status-indicator">READY</div>
                 <div class="window-actions">
-                    <button class="win-btn min" onclick="minimizeApp()">─</button>
-                    <button class="win-btn close" onclick="closeApp()">✕</button>
+                    <button class="win-btn min" onclick="minimizeApp()" title="Minimize">─</button>
+                    <button class="win-btn close" onclick="closeApp()" title="Close">✕</button>
                 </div>
             </div>
         </header>
 
-        <main>
-            <!-- Left Column: Settings -->
-            <section class="panel settings-panel">
-                <h2>Configuration</h2>
-                <div class="preset-controls">
-                    <div class="preset-row">
-                        <select id="preset-select">
-                            <option value="">Presets</option>
-                        </select>
-                        <button class="icon-btn" id="load-preset">Load</button>
+        <!-- Main Studio Workspace -->
+        <main class="studio-main">
+
+            <!-- TAB 1: App Mixer (Uygulama Mikseri) -->
+            <section class="tab-content active" id="tab-content-apps">
+                <div class="rack-header">
+                    <div class="rack-title-group">
+                        <h2>Application Audio Mixer</h2>
+                        <p class="rack-subtitle">Capture and mix audio from multiple applications simultaneously into your SoundX microphone.</p>
                     </div>
-                    <div class="preset-row">
-                        <input type="text" id="preset-name" placeholder="Preset name">
-                        <button class="icon-btn" id="save-preset">Save</button>
+                    <div class="rack-actions">
+                        <button class="action-btn primary" id="open-app-modal-btn">
+                            <span class="btn-icon">＋</span> Add Application
+                        </button>
+                        <button class="action-btn secondary" id="refresh-apps-btn" title="Refresh Applications">
+                            <span>🔄 Refresh</span>
+                        </button>
                     </div>
                 </div>
 
-                <div class="control-group">
-                    <label>Audio Driver</label>
-                    <div class="select-wrapper">
-                        <select id="driver-select">
-                            <option>Loading...</option>
-                        </select>
-                    </div>
+                <!-- Empty State -->
+                <div class="apps-empty-state" id="apps-empty-state">
+                    <div class="empty-icon">🎚️</div>
+                    <h3>No Applications Added Yet</h3>
+                    <p>Select any running application (Spotify, Chrome, Discord, Games, or Media Players) to route its audio directly into your microphone stream.</p>
+                    <button class="action-btn primary pulse" onclick="openAppModal()">
+                        <span class="btn-icon">＋</span> Choose an App to Mix
+                    </button>
                 </div>
 
-                <div class="control-group">
-                    <label>Input Device (From RVC)</label>
-                    <div class="select-wrapper">
-                        <select id="input-select">
-                            <option>Select Driver First</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="control-group">
-                    <label>Output Device (To Mic)</label>
-                    <div class="select-wrapper">
-                        <select id="output-select">
-                            <option>Select Driver First</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="version-footer">
-                    <span id="version-display">V 1.0</span>
-                    <button class="update-btn" onclick="checkUpdate()">Check Update</button>
+                <!-- Added Apps Rack Grid -->
+                <div class="app-rack-grid" id="app-rack-grid">
+                    <!-- Dynamic App Cards Injected by JavaScript -->
                 </div>
             </section>
 
-            <!-- Right Column: Sound & Control -->
-            <section class="panel control-panel">
-                <div class="sound-header">
-                    <h2>Background Sound</h2>
-                    <div>
-                        <button class="icon-btn" onclick="openFolder()">📂 Folder</button>
-                        <button class="icon-btn" onclick="refreshSounds()">🔄</button>
-                    </div>
-                </div>
-
-                <div class="sound-grid" id="sound-grid">
-                    <!-- Sounds injected here -->
-                    <div class="sound-item active" onclick="selectSound(this, null)">None</div>
-                </div>
-
-                <div class="control-footer">
-                    <div class="meter-column">
-                        <div class="meter">
-                            <div class="meter-header">
-                                <span>Input Level</span>
-                                <span id="input-meter-value">0%</span>
+            <!-- TAB 2: Routing & Devices (Aygıtlar ve Ses Yönlendirme) -->
+            <section class="tab-content" id="tab-content-devices">
+                <div class="devices-layout">
+                    <!-- Dynamic Virtual Audio & Discord Quick Setup Card -->
+                    <div class="soundx-feature-card">
+                        <div class="feature-header">
+                            <div class="feature-icon-wrapper">
+                                <span class="feature-icon">🎙️</span>
                             </div>
-                            <div class="meter-bar">
-                                <div class="meter-fill" id="input-meter-fill"></div>
+                            <div class="feature-info">
+                                <h3>Discord, Ses Kaydedici ve OBS Yönlendirme Rehberi</h3>
+                                <p>SoundX Router miksini Discord, OBS veya oyunlarda kullanmak için hedef uygulamanın <strong>Giriş / Mikrofon</strong> ayarında seçtiğiniz Master Çıkış aygıtını belirleyin.</p>
+                            </div>
+                            <div class="feature-action">
+                                <button class="action-btn glow-btn" id="btn-test-chime" onclick="playTestChime()" title="Discord / Ses Kaydediciye test sesi gönderir">
+                                    <span>🔊 Test Sesi Gönder</span>
+                                </button>
                             </div>
                         </div>
-                        <div class="meter">
-                            <div class="meter-header">
-                                <span>Output Level</span>
-                                <span id="output-meter-value">0%</span>
+
+                        <!-- Action Bar -->
+                        <div class="routing-action-bar">
+                            <button class="action-btn secondary small" onclick="copyDiscordMicName()">
+                                <span>📋 Mikrofon Aygıt Adını Kopyala</span>
+                            </button>
+                            <button class="action-btn secondary small" onclick="openSoundControlPanel()">
+                                <span>⚙️ Windows Ses Panelini Aç</span>
+                            </button>
+                            <button class="action-btn secondary small" onclick="registerSoundXDevice()">
+                                <span>✨ VB-Cable Yenile / Tara</span>
+                            </button>
+                        </div>
+
+                        <!-- Feedback Loop Hazard Warning Banner (Auto-shown if same cable selected for in/out) -->
+                        <div class="routing-alert-card" id="routing-loop-alert" style="display: none;">
+                            <span class="alert-icon">⚠️</span>
+                            <div class="alert-text">
+                                <strong>Geri Besleme (Feedback Loop) Uyarısı:</strong> Giriş ve Çıkış için aynı sanal aygıt seçildi. Ses döngüsünü ve yankıyı önlemek için giriş ve çıkışın farklı sanal aygıtlar olmasına dikkat edin.
                             </div>
-                            <div class="meter-bar">
-                                <div class="meter-fill" id="output-meter-fill"></div>
+                        </div>
+
+                        <!-- Missing Virtual Audio Driver Banner (Auto-shown if no virtual device exists) -->
+                        <div class="routing-missing-card" id="missing-vbcable-card" style="display: none;">
+                            <span class="missing-icon">ℹ️</span>
+                            <div class="missing-text">
+                                <strong>Sanal Ses Kablosu Bulunamadı:</strong> SoundX Router sesini Discord veya diğer uygulamalara aktarmak için bilgisayarınızda sanal bir kablo sürücüsü bulunmalıdır.
+                            </div>
+                            <button class="action-btn primary small" onclick="openVBCableSite()">
+                                <span>📥 Ücretsiz VB-Cable İndir</span>
+                            </button>
+                        </div>
+
+                        <div class="feature-status-banner" id="soundx-status-banner">
+                            <span class="status-dot"></span>
+                            <span id="soundx-banner-text">Sanal Ses Köprüsü Aktif: Discord veya Ses Kaydedici'de hedef mikrofonu seçebilirsiniz.</span>
+                        </div>
+                    </div>
+
+                    <div class="device-columns">
+                        <!-- Left Sub-panel: Routing -->
+                        <div class="panel device-panel">
+                            <h2>Audio Drivers & Endpoints</h2>
+                            
+                            <div class="control-group">
+                                <label>Audio Driver System</label>
+                                <div class="select-wrapper">
+                                    <select id="driver-select">
+                                        <option>Loading...</option>
+                                    </select>
+                                </div>
+                                <span class="input-hint">DirectSound veya MME önerilir (maksimum uyumluluk).</span>
+                            </div>
+
+                            <div class="control-group">
+                                <label>Microphone / Primary Input</label>
+                                <div class="select-wrapper">
+                                    <select id="input-select">
+                                        <option>Select Driver First</option>
+                                    </select>
+                                </div>
+                                <span class="input-hint">Fiziksel USB mikrofonunuzu veya Voice Changer için 'CABLE Output' seçin.</span>
+                                <div class="slider-row" style="margin-top: 8px;">
+                                    <input type="range" id="mic-volume-slider" min="0" max="150" value="100">
+                                    <span class="vol-badge" id="mic-vol-display">100%</span>
+                                    <button class="mute-btn-small" id="mic-mute-btn" onclick="toggleMicMute()">Mute</button>
+                                </div>
+                            </div>
+
+                            <div class="control-group">
+                                <label>Master Virtual Output (Ses Çıkış / Hedef Mikrofon)</label>
+                                <div class="select-wrapper">
+                                    <select id="output-select">
+                                        <option>Select Driver First</option>
+                                    </select>
+                                </div>
+                                <span class="input-hint">Discord'a ses aktarmak için <strong>'SteelSeries Sonar - Microphone'</strong> veya <strong>'CABLE Output'</strong> seçebilirsiniz.</span>
+                            </div>
+                        </div>
+
+                        <!-- Right Sub-panel: Monitoring & Headphone Preview -->
+                        <div class="panel device-panel">
+                            <h2>Headphone Monitoring (Smart Preview)</h2>
+
+                            <div class="monitor-toggle-card">
+                                <div class="toggle-info">
+                                    <strong>Listen in Headphones</strong>
+                                    <span>Hear the exact mix in your headphones with zero feedback loops.</span>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" id="monitor-toggle-checkbox">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+
+                            <div class="control-group" id="monitor-controls-group">
+                                <label>Monitoring Output Device (Your Real Headphones)</label>
+                                <div class="select-wrapper">
+                                    <select id="monitor-device-select">
+                                        <option>Select Driver First</option>
+                                    </select>
+                                </div>
+                                <div class="slider-row">
+                                    <label>Monitor Volume</label>
+                                    <input type="range" id="monitor-volume-slider" min="0" max="100" value="80">
+                                    <span class="vol-badge" id="monitor-vol-display">80%</span>
+                                </div>
+                            </div>
+
+                            <div class="presets-section" style="margin-top: 28px; padding-top: 24px;">
+                                <h2 style="margin-bottom: 16px;">Configuration Presets</h2>
+                                <div class="preset-controls" style="display: flex; flex-direction: column; gap: 16px; margin-top: 6px;">
+                                    <div class="preset-row" style="display: flex; gap: 16px; align-items: center;">
+                                        <select id="preset-select" style="min-height: 44px; padding: 12px 18px;">
+                                            <option value="">Select Preset</option>
+                                        </select>
+                                        <button class="icon-btn" id="load-preset" style="min-height: 44px; padding: 12px 24px; min-width: 84px;">Load</button>
+                                    </div>
+                                    <div class="preset-row" style="display: flex; gap: 16px; align-items: center;">
+                                        <input type="text" id="preset-name" placeholder="Preset name" style="min-height: 44px; padding: 12px 18px;">
+                                        <button class="icon-btn" id="save-preset" style="min-height: 44px; padding: 12px 24px; min-width: 84px;">Save</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="volume-inline">
-                        <div class="volume-header">
-                            <span>Volume</span>
-                            <span id="vol-display">20%</span>
-                        </div>
-                        <input type="range" id="volume-slider" min="0" max="100" value="20">
-                    </div>
                 </div>
-
-                <div class="wave-visual">
-                    <div class="wave-header">Live Waveform</div>
-                    <canvas id="wave-canvas"></canvas>
-                </div>
-
-                <button id="toggle-btn" class="toggle-btn">Start Routing</button>
             </section>
+
+            <!-- TAB 3: Soundboard & Ambience (Sesler) -->
+            <section class="tab-content" id="tab-content-soundboard">
+                <div class="soundboard-layout">
+                    <div class="panel soundboard-panel">
+                        <div class="sound-header">
+                            <div>
+                                <h2>Background Ambience Loop</h2>
+                                <span class="sub-text">Continuous ambient loops (rain, vinyl, cafe, room tone)</span>
+                            </div>
+                            <div class="sound-header-buttons">
+                                <button class="icon-btn" onclick="openFolder()">📂 Sounds Folder</button>
+                                <button class="icon-btn" onclick="refreshSounds()">🔄 Refresh</button>
+                            </div>
+                        </div>
+
+                        <div class="sound-grid" id="sound-grid">
+                            <div class="sound-item active" onclick="selectSound(this, null)">None</div>
+                        </div>
+
+                        <div class="ambience-volume-bar">
+                            <label>Ambience Volume</label>
+                            <input type="range" id="volume-slider" min="0" max="100" value="20">
+                            <span class="vol-badge" id="vol-display">20%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
         </main>
+
+        <!-- Studio Master Footer (Always Visible) -->
+        <footer class="studio-footer">
+            <div class="footer-meters">
+                <div class="meter-block">
+                    <div class="meter-label-row">
+                        <span>Mic In</span>
+                        <span id="input-meter-value">0%</span>
+                    </div>
+                    <div class="meter-bar">
+                        <div class="meter-fill" id="input-meter-fill"></div>
+                    </div>
+                </div>
+
+                <div class="meter-block">
+                    <div class="meter-label-row">
+                        <span>Apps Mix</span>
+                        <span id="apps-meter-value">0%</span>
+                    </div>
+                    <div class="meter-bar">
+                        <div class="meter-fill" id="apps-meter-fill"></div>
+                    </div>
+                </div>
+
+                <div class="meter-block">
+                    <div class="meter-label-row">
+                        <span>Master Out</span>
+                        <span id="output-meter-value">0%</span>
+                    </div>
+                    <div class="meter-bar">
+                        <div class="meter-fill" id="output-meter-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Oscilloscope -->
+            <div class="footer-waveform">
+                <canvas id="wave-canvas"></canvas>
+            </div>
+
+            <!-- Master Toggle Button -->
+            <div class="footer-actions">
+                <button id="toggle-btn" class="toggle-btn">
+                    <span class="btn-dot"></span>
+                    <span id="toggle-btn-text">START ROUTING</span>
+                </button>
+            </div>
+        </footer>
+
+        <!-- Add Application Modal Dialog -->
+        <div class="modal-overlay" id="app-modal-overlay">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <div class="modal-title-group">
+                        <h3>Select Application to Mix</h3>
+                        <p>Pick an application to capture its audio feed</p>
+                    </div>
+                    <button class="modal-close-btn" onclick="closeAppModal()">✕</button>
+                </div>
+
+                <!-- Playing vs All Filter Segmented Switch -->
+                <div class="modal-filter-bar">
+                    <div class="modal-filter-tabs">
+                        <button class="modal-filter-tab active" id="filter-btn-playing" onclick="setAppFilter('playing')">
+                            <span class="playing-live-dot"></span>
+                            <span>Playing</span>
+                            <span class="filter-count-badge" id="playing-count-badge">0</span>
+                        </button>
+                        <button class="modal-filter-tab" id="filter-btn-all" onclick="setAppFilter('all')">
+                            <span>All</span>
+                            <span class="filter-count-badge" id="all-count-badge">0</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="modal-search-bar">
+                    <input type="text" id="app-search-input" placeholder="Search application name (e.g. Spotify, Discord, Chrome, Game)..." oninput="filterAppList()">
+                </div>
+
+                <div class="modal-app-list" id="modal-app-list">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast container -->
+        <div id="toast-container" class="toast-container"></div>
     </div>
 
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}?v=1.0.1"></script>
 </body>
 
 </html>
