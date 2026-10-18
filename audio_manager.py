@@ -69,9 +69,12 @@ class AudioManager:
         return [api['name'] for api in sd.query_hostapis()]
 
     def get_device_name(self, dev_id):
-        if dev_id is None or dev_id < 0:
+        if dev_id is None or str(dev_id).strip() == "":
             return None
         try:
+            dev_id = int(dev_id)
+            if dev_id < 0:
+                return None
             devices = sd.query_devices()
             if 0 <= dev_id < len(devices):
                 raw = devices[dev_id]['name']

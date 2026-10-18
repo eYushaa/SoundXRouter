@@ -976,7 +976,13 @@ if (toggleBtn) {
                     body: JSON.stringify(payload)
                 });
 
-                const data = await res.json();
+                let data;
+                try {
+                    data = await res.json();
+                } catch (jsonErr) {
+                    throw new Error(`HTTP ${res.status}: Server returned non-JSON response`);
+                }
+
                 if (data.status === 'started' || data.status === 'already_running') {
                     setRunningState(true);
                     showToast("SoundX Router is actively mixing and routing!", "success");
@@ -985,7 +991,7 @@ if (toggleBtn) {
                     showToast("Start failed: " + (data.message || "Unknown error"), "error");
                 }
             } catch (err) {
-                showToast("Connection error: " + err, "error");
+                showToast("Connection error: " + (err.message || err), "error");
             }
         }
     });

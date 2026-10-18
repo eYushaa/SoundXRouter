@@ -184,43 +184,56 @@ def get_sound_files():
     files = [f for f in os.listdir(SOUNDS_DIR) if f.lower().endswith(('.mp3', '.wav', '.flac', '.ogg'))]
     return files
 
+@app.errorhandler(500)
+def handle_500(e):
+    return jsonify({"status": "error", "message": "Internal Server Error"}), 500
+
+@app.errorhandler(404)
+def handle_404(e):
+    return jsonify({"status": "error", "message": "Endpoint Not Found"}), 404
+
 @app.route('/api/start', methods=['POST'])
 def start_engine():
-    data = request.json
-    manager.stop_preview()
-    input_id = data.get('input_id')
-    output_id = data.get('output_id')
-    monitor_id = data.get('monitor_id')
-    vol = data.get('volume', 20)
-    mic_vol = data.get('mic_volume', 100)
-    mon_enabled = data.get('monitor_enabled', False)
-    mon_vol = data.get('monitor_volume', 100)
-    
-    manager.set_config(
-        input_id=input_id,
-        output_id=output_id,
-        noise_path=os.path.join(SOUNDS_DIR, data['sound']) if data.get('sound') else None,
-        volume=vol,
-        mic_volume=mic_vol,
-        monitor_id=monitor_id,
-        monitor_enabled=mon_enabled,
-        monitor_volume=mon_vol
-    )
-    result = manager.start()
-    
-    save_config({
-        "input_id": input_id,
-        "input_name": manager.get_device_name(input_id) if input_id is not None else None,
-        "output_id": output_id,
-        "output_name": manager.get_device_name(output_id) if output_id is not None else None,
-        "monitor_id": monitor_id,
-        "monitor_name": manager.get_device_name(monitor_id) if monitor_id is not None else None,
-        "monitor_enabled": mon_enabled,
-        "monitor_volume": mon_vol,
-        "volume": vol,
-        "mic_volume": mic_vol
-    })
-    return jsonify(result)
+    try:
+        data = request.json or {}
+        manager.stop_preview()
+        input_id = data.get('input_id')
+        output_id = data.get('output_id')
+        monitor_id = data.get('monitor_id')
+        vol = data.get('volume', 20)
+        mic_vol = data.get('mic_volume', 100)
+        mon_enabled = data.get('monitor_enabled', False)
+        mon_vol = data.get('monitor_volume', 100)
+        
+        manager.set_config(
+            input_id=input_id,
+            output_id=output_id,
+            noise_path=os.path.join(SOUNDS_DIR, data['sound']) if data.get('sound') else None,
+            volume=vol,
+            mic_volume=mic_vol,
+            monitor_id=monitor_id,
+            monitor_enabled=mon_enabled,
+            monitor_volume=mon_vol
+        )
+        result = manager.start()
+        
+        save_config({
+            "input_id": input_id,
+            "input_name": manager.get_device_name(input_id),
+            "output_id": output_id,
+            "output_name": manager.get_device_name(output_id),
+            "monitor_id": monitor_id,
+            "monitor_name": manager.get_device_name(monitor_id),
+            "monitor_enabled": mon_enabled,
+            "monitor_volume": mon_vol,
+            "volume": vol,
+            "mic_volume": mic_vol
+        })
+        return jsonify(result)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/stop', methods=['POST'])
 def stop_engine():
