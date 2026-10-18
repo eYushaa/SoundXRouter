@@ -148,9 +148,17 @@ class AudioEngine:
             
             mic_audio *= self.mic_volume
             mixed += mic_audio
-            self.last_mic_level = float(np.sqrt(np.mean(np.square(mic_audio))))
+            peak = float(np.max(np.abs(mic_audio)))
+            rms = float(np.sqrt(np.mean(np.square(mic_audio))))
+            curr_mic = max(peak, rms * 2.2)
+            if curr_mic >= self.last_mic_level:
+                self.last_mic_level = curr_mic
+            else:
+                self.last_mic_level *= 0.92
         else:
-            self.last_mic_level = 0.0
+            self.last_mic_level *= 0.88
+            if self.last_mic_level < 0.001:
+                self.last_mic_level = 0.0
 
         self.last_input_level = self.last_mic_level
 
@@ -248,9 +256,17 @@ class AudioEngine:
         outdata[:] = mixed
 
         if mixed.size:
-            self.last_output_level = float(np.sqrt(np.mean(np.square(mixed))))
+            out_peak = float(np.max(np.abs(mixed)))
+            out_rms = float(np.sqrt(np.mean(np.square(mixed))))
+            curr_out = max(out_peak, out_rms * 2.2)
+            if curr_out >= self.last_output_level:
+                self.last_output_level = curr_out
+            else:
+                self.last_output_level *= 0.92
         else:
-            self.last_output_level = 0.0
+            self.last_output_level *= 0.88
+            if self.last_output_level < 0.001:
+                self.last_output_level = 0.0
 
         # 7. Push to Monitor (Headphones) buffer if monitoring is enabled
         if self.monitor_enabled and self.monitor_stream:

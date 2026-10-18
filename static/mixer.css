@@ -885,12 +885,14 @@ input:checked + .slider.round:before {
 
 .footer-meters {
     display: flex;
-    gap: 16px;
-    min-width: 320px;
+    gap: 18px;
+    flex: 0 0 340px;
+    min-width: 340px;
 }
 
 .meter-block {
     flex: 1;
+    min-width: 95px;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -904,11 +906,14 @@ input:checked + .slider.round:before {
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    white-space: nowrap;
+    gap: 6px;
 }
 
 .meter-bar {
     height: 8px;
-    background: rgba(255, 255, 255, 0.06);
+    min-width: 80px;
+    background: rgba(255, 255, 255, 0.08);
     border-radius: 6px;
     overflow: hidden;
 }

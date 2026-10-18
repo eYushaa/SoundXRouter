@@ -934,6 +934,11 @@ function setRunningState(running) {
         statusIndicator.textContent = isRunning ? "LIVE STREAMING" : "READY";
         statusIndicator.classList.toggle('running', isRunning);
     }
+    if (isRunning) {
+        startMeterPolling();
+    } else {
+        resetMeters();
+    }
 }
 
 if (toggleBtn) {
@@ -1000,12 +1005,27 @@ if (toggleBtn) {
 // --- VU Meter Polling ---
 function startMeterPolling() {
     if (meterInterval) clearInterval(meterInterval);
-    meterInterval = setInterval(updateMeters, 80);
+    meterInterval = setInterval(updateMeters, 65);
+}
+
+function calculateVuPercent(level) {
+    if (!level || level <= 0.001) return 0;
+    // Perceptual studio VU meter curve (maps low & high signals dynamically)
+    const curved = Math.pow(Math.min(1.0, level * 1.35), 0.45);
+    return Math.min(100, Math.max(0, Math.round(curved * 100)));
+}
+
+function resetMeters() {
+    setMeter(inputMeterFill, inputMeterValue, 0);
+    setMeter(appsMeterFill, appsMeterValue, 0);
+    setMeter(outputMeterFill, outputMeterValue, 0);
+    targetAmplitude = 0;
 }
 
 async function updateMeters() {
     try {
         const res = await fetch('/api/meters');
+        if (!res.ok) return;
         const data = await res.json();
 
         // Sync routing status
@@ -1014,7 +1034,7 @@ async function updateMeters() {
         }
 
         // Mic in
-        const micLevel = data.mic || 0;
+        const micLevel = data.mic || data.input || 0;
         setMeter(inputMeterFill, inputMeterValue, micLevel);
 
         // Apps Combined
@@ -1024,7 +1044,7 @@ async function updateMeters() {
                 if (lvl > maxAppLevel) maxAppLevel = lvl;
                 const fillEl = document.getElementById(`app-meter-${pid}`);
                 if (fillEl) {
-                    const pct = Math.min(100, Math.round(lvl * 140));
+                    const pct = calculateVuPercent(lvl);
                     fillEl.style.width = pct + '%';
                 }
             }
@@ -1035,8 +1055,9 @@ async function updateMeters() {
         const outLevel = data.output || 0;
         setMeter(outputMeterFill, outputMeterValue, outLevel);
 
-        // Oscilloscope sample
-        addWaveSample((micLevel + maxAppLevel + outLevel) / 3.0);
+        // Oscilloscope sample: track active sound
+        const activeLevel = Math.max(outLevel, micLevel, maxAppLevel);
+        addWaveSample(activeLevel);
     } catch (err) {
         // quiet error
     }
@@ -1044,7 +1065,7 @@ async function updateMeters() {
 
 function setMeter(fillEl, valueEl, level) {
     if (!fillEl || !valueEl) return;
-    const pct = Math.min(100, Math.round(level * 130));
+    const pct = calculateVuPercent(level);
     fillEl.style.width = pct + '%';
     valueEl.textContent = pct + '%';
 }
@@ -1073,40 +1094,64 @@ function initWaveCanvas() {
 }
 
 function addWaveSample(level) {
-    targetAmplitude = Math.min(1.5, level * 2.8);
+    if (level > 0.001) {
+        targetAmplitude = Math.min(2.0, Math.pow(level, 0.42) * 2.2);
+    } else {
+        targetAmplitude = 0;
+    }
 }
 
 function drawWave() {
     if (!waveCtx || !waveCanvas) return;
     const width = waveCanvas.clientWidth;
     const height = waveCanvas.clientHeight;
+    if (!width || !height) return;
     waveCtx.clearRect(0, 0, width, height);
 
-    currentAmplitude += (targetAmplitude - currentAmplitude) * 0.12;
-    const baseAmp = 0.05;
+    currentAmplitude += (targetAmplitude - currentAmplitude) * 0.14;
+    const baseAmp = 0.08;
     const totalAmp = baseAmp + currentAmplitude;
-    waveTime += 0.06;
+    waveTime += 0.05;
 
-    drawSineWave(width, height, waveTime * 0.6, totalAmp * 0.7, 0, 'rgba(41, 151, 255, 0.25)');
-    drawSineWave(width, height, waveTime * 0.9, totalAmp * 0.85, 2, 'rgba(175, 82, 222, 0.35)');
-    drawSineWave(width, height, waveTime * 1.3, totalAmp, 4, 'rgba(48, 209, 88, 0.6)');
+    // Layer 1: Ambient Cyan/Blue
+    drawSineWave(width, height, waveTime * 0.6, totalAmp * 0.65, 0, 'rgba(41, 151, 255, 0.22)', '#2997ff');
+    // Layer 2: Purple Mid
+    drawSineWave(width, height, waveTime * 0.9, totalAmp * 0.85, 2, 'rgba(175, 82, 222, 0.28)', '#af52de');
+    // Layer 3: Neon Green Crisp Front Wave
+    drawSineWave(width, height, waveTime * 1.3, totalAmp, 4, 'rgba(48, 209, 88, 0.35)', '#30d158');
 }
 
-function drawSineWave(width, height, time, amplitude, phaseOffset, color) {
+function drawSineWave(width, height, time, amplitude, phaseOffset, fillColor, strokeColor) {
     waveCtx.beginPath();
     waveCtx.moveTo(0, height / 2);
-    const frequency = 0.025;
+    const frequency = 0.022;
 
     for (let x = 0; x <= width; x += 3) {
-        const y = height / 2 + Math.sin(x * frequency + time + phaseOffset) * (height * 0.45 * amplitude);
+        const y = height / 2 + Math.sin(x * frequency + time + phaseOffset) * (height * 0.42 * amplitude);
         waveCtx.lineTo(x, y);
     }
 
+    // Soft gradient fill to bottom
     waveCtx.lineTo(width, height);
     waveCtx.lineTo(0, height);
     waveCtx.closePath();
-    waveCtx.fillStyle = color;
+
+    const grad = waveCtx.createLinearGradient(0, height / 2, 0, height);
+    grad.addColorStop(0, fillColor);
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    waveCtx.fillStyle = grad;
     waveCtx.fill();
+
+    // Top crest neon line
+    waveCtx.beginPath();
+    waveCtx.moveTo(0, height / 2);
+    for (let x = 0; x <= width; x += 3) {
+        const y = height / 2 + Math.sin(x * frequency + time + phaseOffset) * (height * 0.42 * amplitude);
+        waveCtx.lineTo(x, y);
+    }
+    waveCtx.strokeStyle = strokeColor;
+    waveCtx.lineWidth = amplitude > 0.15 ? 1.5 : 1.0;
+    waveCtx.stroke();
 }
 
 // --- Presets ---
@@ -1429,3 +1474,7 @@ function showToast(message, type = 'info') {
         toast.addEventListener('animationend', () => toast.remove());
     }, 3200);
 }
+
+// Start live polling unconditionally
+startMeterPolling();
+

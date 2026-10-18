@@ -42,9 +42,12 @@ class AppAudioSource:
                 return
             arr = arr.reshape(-1, 2)
             
-            # Compute peak/RMS level for visualizer
+            # Compute peak/RMS level for visualizer with instant attack
+            peak = float(np.max(np.abs(arr)))
             rms = float(np.sqrt(np.mean(np.square(arr))))
-            self.last_level = rms
+            curr_lvl = max(peak, rms * 2.2) * self.volume
+            if curr_lvl > self.last_level:
+                self.last_level = curr_lvl
 
             with self.lock:
                 self.chunks.append(arr)
@@ -116,10 +119,17 @@ class AppAudioSource:
                     break
 
         if pulled > 0:
+            peak = float(np.max(np.abs(out[:pulled])))
             rms = float(np.sqrt(np.mean(np.square(out[:pulled]))))
-            self.last_level = rms * self.volume
+            curr_lvl = max(peak, rms * 2.2) * self.volume
+            if curr_lvl >= self.last_level:
+                self.last_level = curr_lvl
+            else:
+                self.last_level *= 0.92
         else:
-            self.last_level = 0.0
+            self.last_level *= 0.90
+            if self.last_level < 0.001:
+                self.last_level = 0.0
 
         # Apply volume
         out *= self.volume
