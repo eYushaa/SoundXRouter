@@ -1,0 +1,80 @@
+/* AUTO-GENERATED flex-gap polyfill for Chromium < 84 (QtWebEngine 5.15). Active only with html.no-flex-gap */
+html.no-flex-gap .header-controls,
+html.no-flex-gap .window-actions,
+html.no-flex-gap .logo-area,
+html.no-flex-gap .logo-title,
+html.no-flex-gap .nav-tabs,
+html.no-flex-gap .nav-tab,
+html.no-flex-gap .rack-header,
+html.no-flex-gap .rack-actions,
+html.no-flex-gap .action-btn,
+html.no-flex-gap .icon-btn,
+html.no-flex-gap .sound-header-buttons,
+html.no-flex-gap .routing-action-bar,
+html.no-flex-gap .toggle-btn {
+    gap: 0 !important;
+}
+html.no-flex-gap .header-controls > * + * { margin-inline-start: 6px; }
+html.no-flex-gap .status-indicator > * + * { margin-inline-start: 6px; }
+html.no-flex-gap .status-indicator::before { margin-inline-end: 6px; }
+html.no-flex-gap .window-actions > * + * { margin-inline-start: 8px; }
+html.no-flex-gap .panel > * + * { margin-top: 20px; }
+html.no-flex-gap .control-group > * + * { margin-top: 8px; }
+html.no-flex-gap .preset-controls > * + * { margin-top: 12px; }
+html.no-flex-gap .preset-row > * + * { margin-inline-start: 12px; }
+html.no-flex-gap .sound-header > * + * { margin-inline-start: 16px; }
+html.no-flex-gap .sound-item > * + * { margin-top: 2px; }
+html.no-flex-gap .meter-column > * + * { margin-top: 10px; }
+html.no-flex-gap .volume-inline > * + * { margin-top: 10px; }
+html.no-flex-gap .meter > * + * { margin-top: 6px; }
+html.no-flex-gap .toggle-btn > * + * { margin-inline-start: 10px; }
+html.no-flex-gap .wave-visual > * + * { margin-top: 8px; }
+html.no-flex-gap .toast-container > * + * { margin-top: 10px; }
+html.no-flex-gap .toast > * + * { margin-inline-start: 10px; }
+html.no-flex-gap .logo-area > * + * { margin-inline-start: 8px; }
+html.no-flex-gap .logo-title > * + * { margin-inline-start: 6px; }
+html.no-flex-gap .nav-tabs > * + * { margin-inline-start: 4px; }
+html.no-flex-gap .nav-tab > * + * { margin-inline-start: 6px; }
+html.no-flex-gap .rack-header > * + * { margin-inline-start: 14px; }
+html.no-flex-gap .rack-actions > * + * { margin-inline-start: 12px; }
+html.no-flex-gap .action-btn > * + * { margin-inline-start: 8px; }
+html.no-flex-gap .icon-btn > * + * { margin-inline-start: 7px; }
+html.no-flex-gap .apps-empty-state > * + * { margin-top: 12px; }
+html.no-flex-gap .app-card > * + * { margin-top: 14px; }
+html.no-flex-gap .app-card-left > * + * { margin-inline-start: 12px; }
+html.no-flex-gap .app-pid > * + * { margin-inline-start: 6px; }
+html.no-flex-gap .app-card-actions > * + * { margin-inline-start: 6px; }
+html.no-flex-gap .app-meter-container > * + * { margin-top: 4px; }
+html.no-flex-gap .app-slider-row > * + * { margin-inline-start: 14px; }
+html.no-flex-gap .soundx-feature-card > * + * { margin-top: 18px; }
+html.no-flex-gap .feature-header > * + * { margin-inline-start: 20px; }
+html.no-flex-gap .feature-status-banner > * + * { margin-inline-start: 14px; }
+html.no-flex-gap .routing-visual-flow > * + * { margin-inline-start: 10px; }
+html.no-flex-gap .flow-node > * + * { margin-top: 3px; }
+html.no-flex-gap .routing-alert-card > * + * { margin-inline-start: 14px; }
+html.no-flex-gap .routing-missing-card > * + * { margin-inline-start: 14px; }
+html.no-flex-gap .slider-row > * + * { margin-inline-start: 12px; }
+html.no-flex-gap .monitor-toggle-card > * + * { margin-inline-start: 16px; }
+html.no-flex-gap .toggle-info > * + * { margin-top: 4px; }
+html.no-flex-gap .ambience-volume-bar > * + * { margin-inline-start: 16px; }
+html.no-flex-gap .studio-footer > * + * { margin-inline-start: 28px; }
+html.no-flex-gap .footer-meters > * + * { margin-inline-start: 24px; }
+html.no-flex-gap .meter-block > * + * { margin-top: 8px; }
+html.no-flex-gap .meter-label-row > * + * { margin-inline-start: 10px; }
+html.no-flex-gap .modal-card > * + * { margin-top: 18px; }
+html.no-flex-gap .modal-filter-tabs > * + * { margin-inline-start: 4px; }
+html.no-flex-gap .modal-filter-tab > * + * { margin-inline-start: 8px; }
+html.no-flex-gap .modal-app-list > * + * { margin-top: 10px; }
+html.no-flex-gap .modal-app-info > * + * { margin-inline-start: 14px; }
+html.no-flex-gap .modal-app-sub > * + * { margin-inline-start: 8px; }
+html.no-flex-gap .modal-empty-state > * + * { margin-top: 10px; }
+html.no-flex-gap .theme-option > * + * { margin-inline-start: 12px; }
+html.no-flex-gap .devices-layout > * + * { margin-top: var(--gap-lg); }
+html.no-flex-gap .sound-header-buttons > * + * { margin-inline-start: 8px; }
+html.no-flex-gap .routing-action-bar > * { margin-inline-end: 12px; }
+html.no-flex-gap .theme-menu > * + * { margin-top: 2px; }
+html.no-flex-gap .device-panel > * + *, html.no-flex-gap .soundboard-panel > * + * { margin-top: 0; }
+html.no-flex-gap .window-actions .win-btn + .win-btn { margin-inline-start: 8px; }
+html.no-flex-gap .logo-title span { margin-inline-start: 2px; }
+
+html.no-flex-gap .lang-menu > * + * { margin-top: 2px; }

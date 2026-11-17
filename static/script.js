@@ -58,6 +58,7 @@ const appsEmptyState = document.getElementById('apps-empty-state');
 const appsCountBadge = document.getElementById('apps-count-badge');
 const soundxStatusPill = document.getElementById('soundx-status-pill');
 const soundxBannerText = document.getElementById('soundx-banner-text');
+const loopAlertBanner = document.getElementById('routing-loop-alert');
 
 const appModalOverlay = document.getElementById('app-modal-overlay');
 const appSearchInput = document.getElementById('app-search-input');
@@ -65,8 +66,119 @@ const modalAppList = document.getElementById('modal-app-list');
 const openAppModalBtn = document.getElementById('open-app-modal-btn');
 const refreshAppsBtn = document.getElementById('refresh-apps-btn');
 
+// --- Theme Manager ---
+const THEMES = [
+    { id: 'glass', name: 'Aurora Glass', sw: ['#5e17eb', '#2997ff', '#f72585'] },
+    { id: 'midnight', name: 'Gece Mavisi', sw: ['#1d3a8a', '#5b8cff', '#8b7bff'] },
+    { id: 'light', name: 'Beyaz', sw: ['#f6f8fd', '#2f6bff', '#7c4dff'] },
+    { id: 'amoled', name: 'Saf Siyah', sw: ['#000000', '#f2f2f5', '#9a9aa3'] },
+    { id: 'cyberpunk', name: 'Cyberpunk', sw: ['#5a00ff', '#00f0ff', '#ff2d95'] },
+    { id: 'forest', name: 'Orman', sw: ['#0f6b4c', '#34d399', '#2dd4bf'] },
+    { id: 'sunset', name: 'Gün Batımı', sw: ['#be185d', '#fb923c', '#f472b6'] },
+    { id: 'nord', name: 'Nord', sw: ['#3b5878', '#88c0d0', '#b48ead'] }
+];
+let waveColors = null;
+
+function getTheme() {
+    return document.documentElement.dataset.theme || 'glass';
+}
+
+function applyTheme(id, persist = true) {
+    if (!THEMES.some(t => t.id === id)) id = 'glass';
+    document.documentElement.dataset.theme = id;
+    try { localStorage.setItem('soundx_theme', id); } catch (e) { }
+    waveColors = null;
+    renderThemeMenu();
+    if (persist) {
+        fetch('/api/config/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ theme: id })
+        }).catch(() => { });
+    }
+}
+
+let hasVirtualDevices = false;
+
+function renderThemeMenu() {
+    const menu = document.getElementById('theme-menu');
+    if (!menu) return;
+    const current = getTheme();
+    menu.innerHTML = `<div class="theme-menu-title">${t('header.theme_menu')}</div>`;
+    THEMES.forEach(th => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'theme-option' + (th.id === current ? ' active' : '');
+        btn.innerHTML = `
+            <span class="theme-swatch" style="background: linear-gradient(135deg, ${th.sw[0]} 0%, ${th.sw[1]} 55%, ${th.sw[2]} 100%)"></span>
+            <span class="theme-name">${t('theme.' + th.id)}</span>
+            <span class="theme-check"></span>`;
+        btn.addEventListener('click', () => {
+            applyTheme(th.id);
+            document.getElementById('theme-picker').classList.remove('open');
+        });
+        menu.appendChild(btn);
+    });
+}
+
+function initThemePicker() {
+    const picker = document.getElementById('theme-picker');
+    const btn = document.getElementById('theme-btn');
+    if (!picker || !btn) return;
+    renderThemeMenu();
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const lp = document.getElementById('lang-picker');
+        if (lp) lp.classList.remove('open');
+        picker.classList.toggle('open');
+    });
+    document.addEventListener('click', (e) => {
+        if (!picker.contains(e.target)) picker.classList.remove('open');
+    });
+}
+
+function updateDynamicTranslations() {
+    if (inputSelect && inputSelect.options.length > 0 && inputSelect.options[0].value === '-1') {
+        inputSelect.options[0].textContent = t('devices.input_none');
+    }
+    if (presetSelect && presetSelect.options.length > 0 && presetSelect.options[0].value === '') {
+        presetSelect.options[0].textContent = t('presets.select_placeholder');
+    }
+    if (micMuteBtn) {
+        micMuteBtn.textContent = isMicMuted ? t('devices.unmute_btn') : t('devices.mute_btn');
+    }
+    setRunningState(isRunning);
+    updateSoundXStatus(audioData.soundx_info);
+    updateRoutingGuide(false);
+    renderAppRack();
+    populateSounds(audioData.sounds || []);
+    if (appModalOverlay && appModalOverlay.classList.contains('active')) {
+        filterAppList();
+    }
+}
+
+function readWaveColors() {
+    const cs = getComputedStyle(document.documentElement);
+    const v = (name, fb) => (cs.getPropertyValue(name).trim() || fb);
+    const accent = v('--accent-color', '#2997ff');
+    const accent2 = v('--accent-2', '#af52de');
+    const a1 = v('--accent-rgb', '41, 151, 255');
+    const a2 = v('--accent-2-rgb', '175, 82, 222');
+    const a3 = v('--wave-3-rgb', '48, 209, 88');
+    const isLight = getTheme() === 'light';
+    waveColors = {
+        fade: isLight ? 'rgba(255, 255, 255, 0)' : 'rgba(0, 0, 0, 0)',
+        l1: [`rgba(${a1}, ${isLight ? 0.08 : 0.22})`, accent],
+        l2: [`rgba(${a2}, ${isLight ? 0.10 : 0.28})`, accent2],
+        l3: [`rgba(${a3}, ${isLight ? 0.12 : 0.35})`, `rgb(${a3})`]
+    };
+}
+
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
+    initLangPicker();
+    initThemePicker();
+    applyLanguage(detectSystemLanguage(), false);
     initTabs();
     initWindowControls();
     initWaveCanvas();
@@ -78,6 +190,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         audioData.sounds = data.sounds || [];
         activeApps = data.app_states || [];
         availableAppsList = data.available_apps || [];
+        if (data.config && data.config.theme && data.config.theme !== getTheme()) {
+            applyTheme(data.config.theme, false);
+        }
+        applyLanguage(detectSystemLanguage(data.system_lang), false);
 
         populateDrivers();
         populateSounds(audioData.sounds);
@@ -135,13 +251,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (typeof cfg.mic_muted === 'boolean' && micMuteBtn) {
             isMicMuted = cfg.mic_muted;
-            if (isMicMuted) {
-                micMuteBtn.classList.add('active');
-                micMuteBtn.textContent = 'Unmute';
-                if (micMuteText) {
-                    micMuteText.textContent = 'Muted';
-                    micMuteText.style.color = 'var(--danger-color)';
-                }
+            micMuteBtn.classList.toggle('active', isMicMuted);
+            micMuteBtn.textContent = isMicMuted ? t('devices.unmute_btn') : t('devices.mute_btn');
+            if (isMicMuted && micMuteText) {
+                micMuteText.textContent = 'Muted';
+                micMuteText.style.color = 'var(--danger-color)';
             }
         }
 
@@ -200,42 +314,43 @@ function updateSoundXStatus(info) {
     if (!info) return;
     const scan = info.scan || {};
     const hasVirtual = scan.has_virtual_devices !== undefined ? scan.has_virtual_devices : info.registered;
-    
+    hasVirtualDevices = !!hasVirtual;
+
     if (soundxStatusPill) {
-        soundxStatusPill.textContent = hasVirtual ? "VB-Cable Ready" : "Driver Needed";
+        soundxStatusPill.textContent = hasVirtual ? t('pill.ready') : t('pill.needed');
         soundxStatusPill.style.background = hasVirtual ? "rgba(48, 209, 88, 0.2)" : "rgba(255, 159, 10, 0.2)";
         soundxStatusPill.style.color = hasVirtual ? "#30d158" : "#ff9f0a";
     }
-    
+
     const missingVBCableCard = document.getElementById('missing-vbcable-card');
     if (missingVBCableCard) {
         missingVBCableCard.style.display = hasVirtual ? "none" : "flex";
     }
 
     if (soundxBannerText) {
-        soundxBannerText.innerHTML = hasVirtual 
-            ? "<strong>Sanal Ses Köprüsü Aktif:</strong> Discord veya Ses Kaydedici'de Mikrofon olarak <strong>'CABLE Output (VB-Audio Virtual Cable)'</strong> seçin."
-            : "<strong>Sanal Ses Sürücüsü Gerekli:</strong> Diğer uygulamalara ses aktarabilmek için ücretsiz VB-Cable kurun.";
+        soundxBannerText.innerHTML = hasVirtual
+            ? t('routing.banner_active', { device: 'CABLE Output (VB-Audio Virtual Cable)' })
+            : t('routing.banner_needed');
     }
 }
 
 async function registerSoundXDevice() {
-    showToast("VB-Cable aygıtları kontrol ediliyor...", "info");
+    showToast(t('toast.scanning_vb'), "info");
     try {
-        const res = await fetch('/api/soundx/register', { method: 'POST' });
-        const data = await res.json();
-        showToast("VB-Cable aygıtları hazır (CABLE Output / CABLE Input)!", "success");
-        
+        await fetch('/api/soundx/register', { method: 'POST' });
+        showToast(t('toast.vb_ready'), "success");
+
         // Refresh device list
         const initRes = await fetch('/api/init');
         const initData = await initRes.json();
         audioData.devices = initData.devices;
+        audioData.soundx_info = initData.soundx_info;
         updateSoundXStatus(initData.soundx_info);
         if (driverSelect && driverSelect.value) {
             updateDevices(parseInt(driverSelect.value));
         }
     } catch (e) {
-        showToast("Bilgi: " + e, "info");
+        showToast(t('toast.info', { msg: e }), "info");
     }
 }
 
@@ -341,7 +456,7 @@ function updateDevices(apiIndex) {
         inputSelect.innerHTML = '';
         const noMicOpt = document.createElement('option');
         noMicOpt.value = "-1";
-        noMicOpt.textContent = "None (App Mixing Only)";
+        noMicOpt.textContent = t('devices.input_none');
         inputSelect.appendChild(noMicOpt);
 
         let inputSelected = false;
@@ -436,7 +551,7 @@ function updateDevices(apiIndex) {
     updateRoutingGuide();
 }
 
-function updateRoutingGuide() {
+function updateRoutingGuide(persist = true) {
     if (!inputSelect || !outputSelect) return;
     const selectedInputOpt = inputSelect.options[inputSelect.selectedIndex];
     const selectedOutputOpt = outputSelect.options[outputSelect.selectedIndex];
@@ -445,35 +560,40 @@ function updateRoutingGuide() {
     const inName = selectedInputOpt ? selectedInputOpt.textContent : "";
     const outName = selectedOutputOpt ? selectedOutputOpt.textContent : "";
     const monName = selectedMonitorOpt ? selectedMonitorOpt.textContent : "";
+    const hasValidIn = inputSelect.value !== "" && inputSelect.options.length > 0 && inName !== t('devices.select_driver_first');
+    const hasValidOut = outputSelect.value !== "" && outputSelect.options.length > 0 && outName !== t('devices.select_driver_first');
 
-    // Save choices to localStorage so they persist across reboots and driver switches
-    if (inName && inName !== "Select Driver First") {
-        localStorage.setItem('soundx_input_name', inName);
-        localStorage.setItem('soundx_input_id', inputSelect.value);
-    }
-    if (outName && outName !== "Select Driver First") {
-        localStorage.setItem('soundx_output_name', outName);
-        localStorage.setItem('soundx_output_id', outputSelect.value);
-    }
-    if (monName && monName !== "Select Driver First") {
-        localStorage.setItem('soundx_monitor_name', monName);
-        if (monitorSelect) localStorage.setItem('soundx_monitor_id', monitorSelect.value);
+    if (persist) {
+        if (inName && hasValidIn) {
+            localStorage.setItem('soundx_input_name', inName);
+            localStorage.setItem('soundx_input_id', inputSelect.value);
+        }
+        if (outName && hasValidOut) {
+            localStorage.setItem('soundx_output_name', outName);
+            localStorage.setItem('soundx_output_id', outputSelect.value);
+        }
+        if (monName && monitorSelect && monitorSelect.value !== "" && monName !== t('devices.select_driver_first')) {
+            localStorage.setItem('soundx_monitor_name', monName);
+            localStorage.setItem('soundx_monitor_id', monitorSelect.value);
+        }
     }
 
-    // Calculate corresponding Discord / Windows Ses Kaydedici Microphone name
+    // Calculate corresponding Discord / Voice Recorder Microphone name
     let targetDiscordMic = "CABLE Output (VB-Audio Virtual Cable)";
     const outLow = outName.toLowerCase();
     if (outLow.includes("cable input") || outLow.includes("soundx router") || outLow.includes("vb-cable")) {
         targetDiscordMic = "CABLE Output (VB-Audio Virtual Cable)";
     } else if (outLow.includes("sonar")) {
         targetDiscordMic = "SteelSeries Sonar - Microphone";
-    } else if (outName) {
+    } else if (hasValidOut && outName) {
         targetDiscordMic = outName;
     }
 
     // Update banner with active target microphone
     if (soundxBannerText) {
-        soundxBannerText.innerHTML = `<strong>Sanal Ses Köprüsü Aktif:</strong> Discord veya Ses Kaydedici'de Mikrofon olarak <strong>'${targetDiscordMic}'</strong> seçin.`;
+        soundxBannerText.innerHTML = hasVirtualDevices || hasValidOut
+            ? t('routing.banner_active', { device: escapeHtml(targetDiscordMic) })
+            : t('routing.banner_needed');
     }
 
     // Detect feedback loop hazard
@@ -485,8 +605,9 @@ function updateRoutingGuide() {
         loopAlertBanner.style.display = isLoop ? "flex" : "none";
     }
 
-    // Persist to server config.json
-    saveCurrentConfigDebounced();
+    if (persist) {
+        saveCurrentConfigDebounced();
+    }
 }
 
 // Add event listeners for device changes
@@ -520,14 +641,14 @@ function copyDiscordMicName() {
         }
     }
     navigator.clipboard.writeText(textToCopy).then(() => {
-        showToast("Kopyalandı! Discord ve Ses Kaydedici'de Giriş Aygıtı (Mikrofon) olarak seçin: " + textToCopy, "success");
+        showToast(t('toast.copied_mic', { device: textToCopy }), "success");
     }).catch(() => {
-        showToast("Seçilecek aygıt: " + textToCopy, "info");
+        showToast(t('toast.select_mic', { device: textToCopy }), "info");
     });
 }
 
 async function playTestChime() {
-    showToast("Discord / OBS çıkışına test sesi gönderiliyor...", "info");
+    showToast(t('toast.sending_test'), "info");
     try {
         const outId = outputSelect ? outputSelect.value : null;
         const res = await fetch('/api/routing/test_tone', {
@@ -537,19 +658,19 @@ async function playTestChime() {
         });
         const data = await res.json();
         if (data.status === 'ok') {
-            showToast("🔊 Test sesi gönderildi! Discord veya OBS mikrofon seviyenizi kontrol edin.", "success");
+            showToast(t('toast.test_sent'), "success");
         } else {
-            showToast("Test sesi hatası: " + (data.message || "Bilinmiyor"), "error");
+            showToast(t('toast.test_err', { msg: data.message || "Unknown" }), "error");
         }
     } catch (e) {
-        showToast("Hata: " + e, "error");
+        showToast(t('toast.error', { msg: e }), "error");
     }
 }
 
 async function openSoundControlPanel() {
     try {
         await fetch('/api/open_sound_control_panel', { method: 'POST' });
-        showToast("Windows Ses Denetim Masası açıldı.", "info");
+        showToast(t('toast.sound_panel'), "info");
     } catch (e) {
         console.error(e);
     }
@@ -565,14 +686,41 @@ function openVBCableSite() {
 
 
 // --- Application Mixer Rack ---
-function getAppEmoji(name) {
+function svgIcon(body, size = 18, strokeWidth = 1.85) {
+    return `<svg class="ui-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+}
+
+const APP_ICON_TABLE = [
+    {
+        keys: ['spotify', 'music', 'itunes', 'tidal', 'deezer'],
+        path: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'
+    },
+    {
+        keys: ['chrome', 'brave', 'firefox', 'edge', 'opera', 'vivaldi'],
+        path: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>'
+    },
+    {
+        keys: ['discord', 'teams', 'telegram', 'skype', 'zoom', 'slack'],
+        path: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'
+    },
+    {
+        keys: ['game', 'steam', 'epic', 'valorant', 'cs2', 'gta'],
+        path: '<line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="4"/>'
+    },
+    {
+        keys: ['vlc', 'media', 'player', 'mpv', 'obs'],
+        path: '<rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10 9 16 12 10 15 10 9"/>'
+    }
+];
+const ICON_SPEAKER_WAVES = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>';
+const ICON_SPEAKER_MUTE = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>';
+const ICON_SPEAKER_LOW = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+const ICON_SEARCH = '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>';
+
+function getAppIconSvg(name) {
     const n = name.toLowerCase();
-    if (n.includes('spotify') || n.includes('music') || n.includes('itunes')) return '🎵';
-    if (n.includes('chrome') || n.includes('brave') || n.includes('firefox') || n.includes('edge') || n.includes('opera')) return '🌐';
-    if (n.includes('discord') || n.includes('teams') || n.includes('telegram') || n.includes('skype')) return '💬';
-    if (n.includes('game') || n.includes('steam') || n.includes('epic') || n.includes('valorant') || n.includes('cs2') || n.includes('gta')) return '🎮';
-    if (n.includes('vlc') || n.includes('media') || n.includes('player') || n.includes('mpv')) return '🎬';
-    return '🔊';
+    const match = APP_ICON_TABLE.find(entry => entry.keys.some(k => n.includes(k)));
+    return svgIcon(match ? match.path : ICON_SPEAKER_WAVES, 18, 1.85);
 }
 
 function renderAppRack() {
@@ -595,13 +743,13 @@ function renderAppRack() {
         card.className = `app-card ${app.muted ? 'muted' : ''}`;
         card.id = `app-card-${app.pid}`;
 
-        const emoji = getAppEmoji(app.name);
+        const appIcon = getAppIconSvg(app.name);
         const volumePct = Math.round((app.volume || 1.0) * 100);
 
         card.innerHTML = `
             <div class="app-card-top">
                 <div class="app-card-left">
-                    <div class="app-avatar">${emoji}</div>
+                    <div class="app-avatar">${appIcon}</div>
                     <div class="app-meta">
                         <div class="app-name" title="${app.name}">${app.name}</div>
                         <div class="app-pid">
@@ -612,12 +760,12 @@ function renderAppRack() {
                 </div>
                 <div class="app-card-actions">
                     <button class="app-icon-btn mute-btn ${app.muted ? 'active' : ''}" 
-                            title="${app.muted ? 'Unmute' : 'Mute'}" 
+                            title="${app.muted ? t('apps.unmute') : t('apps.mute')}" 
                             onclick="toggleAppMute(${app.pid})">
-                        ${app.muted ? '🔇' : '🔊'}
+                        ${svgIcon(app.muted ? ICON_SPEAKER_MUTE : ICON_SPEAKER_LOW, 15, 1.9)}
                     </button>
                     <button class="app-icon-btn remove-btn" 
-                            title="Remove from Mix" 
+                            title="${t('apps.remove')}" 
                             onclick="removeApp(${app.pid})">
                         ✕
                     </button>
@@ -676,7 +824,7 @@ async function removeApp(pid) {
     });
     activeApps = activeApps.filter(a => a.pid !== pid);
     renderAppRack();
-    showToast("Application removed from mix", "info");
+    showToast(t('toast.app_removed'), "info");
 }
 
 // --- Modal Logic ---
@@ -685,10 +833,10 @@ if (openAppModalBtn) {
 }
 if (refreshAppsBtn) {
     refreshAppsBtn.addEventListener('click', async () => {
-        showToast("Refreshing running applications...", "info");
+        showToast(t('toast.refreshing_apps'), "info");
         const res = await fetch('/api/apps/available');
         availableAppsList = await res.json();
-        showToast(`Found ${availableAppsList.length} applications`, "success");
+        showToast(t('toast.found_apps', { count: availableAppsList.length }), "success");
     });
 }
 
@@ -733,7 +881,7 @@ async function openAppModal() {
         btnPlaying.classList.add('active');
         btnAll.classList.remove('active');
     }
-    modalAppList.innerHTML = '<div style="padding: 30px; text-align: center; color: var(--text-secondary);">Aktif ses oturumları taranıyor...</div>';
+    modalAppList.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-secondary);">${t('modal.scanning')}</div>`;
 
     try {
         const res = await fetch('/api/apps/available');
@@ -741,7 +889,7 @@ async function openAppModal() {
         updateModalFilterBadges();
         filterAppList();
     } catch (e) {
-        modalAppList.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--danger-color);">Error listing applications: ${e}</div>`;
+        modalAppList.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--danger-color);">${t('toast.error', { msg: e })}</div>`;
     }
 }
 
@@ -778,17 +926,17 @@ function renderModalAppList(apps) {
         if (currentAppFilter === 'playing') {
             modalAppList.innerHTML = `
                 <div class="modal-empty-state">
-                    <div class="empty-icon">🔇</div>
-                    <h4>Şu an ses oynatan aktif uygulama bulunamadı</h4>
-                    <p>Spotify, YouTube veya oyun açıp ses çaldığınızda burada otomatik listelenecektir.<br>Açık tüm pencereleri görmek için yukarıdan <strong>All</strong> sekmesine tıklayabilirsiniz.</p>
+                    <div class="empty-icon">${svgIcon(ICON_SPEAKER_MUTE, 28, 1.65)}</div>
+                    <h4>${t('modal.empty_playing_title')}</h4>
+                    <p>${t('modal.empty_playing_desc')}</p>
                 </div>
             `;
         } else {
             modalAppList.innerHTML = `
                 <div class="modal-empty-state">
-                    <div class="empty-icon">🔍</div>
-                    <h4>Aramanızla eşleşen uygulama bulunamadı</h4>
-                    <p>Farklı bir kelime deneyin veya arama çubuğunu temizleyin.</p>
+                    <div class="empty-icon">${svgIcon(ICON_SEARCH, 28, 1.65)}</div>
+                    <h4>${t('modal.empty_search_title')}</h4>
+                    <p>${t('modal.empty_search_desc')}</p>
                 </div>
             `;
         }
@@ -800,23 +948,23 @@ function renderModalAppList(apps) {
         const item = document.createElement('div');
         item.className = 'modal-app-item';
 
-        const emoji = getAppEmoji(app.name);
+        const appIcon = getAppIconSvg(app.name);
 
         item.innerHTML = `
             <div class="modal-app-info">
-                <div class="modal-app-icon">${emoji}</div>
+                <div class="modal-app-icon">${appIcon}</div>
                 <div class="modal-app-text">
                     <div class="modal-app-title">${app.name}</div>
                     <div class="modal-app-sub">
                         <span>PID: ${app.pid}</span>
-                        ${app.has_audio ? '<span class="audio-active-badge">● Playing Sound</span>' : ''}
+                        ${app.has_audio ? `<span class="audio-active-badge">${t('modal.playing_badge')}</span>` : ''}
                     </div>
                 </div>
             </div>
             <button class="modal-add-btn ${isAdded ? 'added' : ''}" 
                     onclick="addAppFromModal(${app.pid}, '${escapeHtml(app.name)}', '${escapeHtml(app.raw_name || '')}', this)" 
                     ${isAdded ? 'disabled' : ''}>
-                ${isAdded ? 'Added' : '＋ Add to Mix'}
+                ${isAdded ? t('modal.added_btn') : t('modal.add_btn')}
             </button>
         `;
         modalAppList.appendChild(item);
@@ -834,7 +982,7 @@ async function addAppFromModal(pid, name, rawName, btn) {
     }
     if (btn) {
         btn.disabled = true;
-        btn.textContent = 'Adding...';
+        btn.textContent = t('modal.adding_btn');
     }
 
     const res = await fetch('/api/apps/add', {
@@ -847,16 +995,16 @@ async function addAppFromModal(pid, name, rawName, btn) {
         activeApps = data.apps || [];
         renderAppRack();
         if (btn) {
-            btn.textContent = 'Added';
+            btn.textContent = t('modal.added_btn');
             btn.classList.add('added');
         }
-        showToast(`Added ${name} to mix!`, "success");
+        showToast(t('toast.app_added', { name }), "success");
     } else {
         if (btn) {
             btn.disabled = false;
-            btn.textContent = '＋ Add to Mix';
+            btn.textContent = t('modal.add_btn');
         }
-        showToast("Error adding app", "error");
+        showToast(t('toast.add_app_err'), "error");
     }
 }
 
@@ -877,7 +1025,7 @@ function toggleMicMute() {
     isMicMuted = !isMicMuted;
     if (micMuteBtn) {
         micMuteBtn.classList.toggle('active', isMicMuted);
-        micMuteBtn.textContent = isMicMuted ? 'Unmute' : 'Mute';
+        micMuteBtn.textContent = isMicMuted ? t('devices.unmute_btn') : t('devices.mute_btn');
     }
     if (micMuteText) {
         micMuteText.textContent = isMicMuted ? 'Muted' : 'Active';
@@ -928,10 +1076,10 @@ function setRunningState(running) {
         toggleBtn.classList.toggle('running', isRunning);
     }
     if (toggleBtnText) {
-        toggleBtnText.textContent = isRunning ? "STOP ROUTING" : "START ROUTING";
+        toggleBtnText.textContent = isRunning ? t('footer.stop') : t('footer.start');
     }
     if (statusIndicator) {
-        statusIndicator.textContent = isRunning ? "LIVE STREAMING" : "READY";
+        statusIndicator.textContent = isRunning ? t('status.live') : t('status.ready');
         statusIndicator.classList.toggle('running', isRunning);
     }
     if (isRunning) {
@@ -949,9 +1097,9 @@ if (toggleBtn) {
             try {
                 await fetch('/api/stop', { method: 'POST' });
                 setRunningState(false);
-                showToast("Routing stopped", "info");
+                showToast(t('toast.routing_stopped'), "info");
             } catch (err) {
-                showToast("Stop error: " + err, "error");
+                showToast(t('toast.stop_err', { msg: err }), "error");
             }
         } else {
             // START
@@ -959,7 +1107,7 @@ if (toggleBtn) {
             const outputId = outputSelect ? outputSelect.value : null;
 
             if (!outputId || outputId === "Select Driver First" || outputId === "") {
-                showToast("Please select an Output Device first.", "error");
+                showToast(t('toast.select_output_first'), "error");
                 return;
             }
 
@@ -990,13 +1138,13 @@ if (toggleBtn) {
 
                 if (data.status === 'started' || data.status === 'already_running') {
                     setRunningState(true);
-                    showToast("SoundX Router is actively mixing and routing!", "success");
+                    showToast(t('toast.routing_started'), "success");
                 } else {
                     setRunningState(false);
-                    showToast("Start failed: " + (data.message || "Unknown error"), "error");
+                    showToast(t('toast.start_failed', { msg: data.message || "Unknown error" }), "error");
                 }
             } catch (err) {
-                showToast("Connection error: " + (err.message || err), "error");
+                showToast(t('toast.conn_err', { msg: err.message || err }), "error");
             }
         }
     });
@@ -1113,12 +1261,13 @@ function drawWave() {
     const totalAmp = baseAmp + currentAmplitude;
     waveTime += 0.05;
 
-    // Layer 1: Ambient Cyan/Blue
-    drawSineWave(width, height, waveTime * 0.6, totalAmp * 0.65, 0, 'rgba(41, 151, 255, 0.22)', '#2997ff');
-    // Layer 2: Purple Mid
-    drawSineWave(width, height, waveTime * 0.9, totalAmp * 0.85, 2, 'rgba(175, 82, 222, 0.28)', '#af52de');
-    // Layer 3: Neon Green Crisp Front Wave
-    drawSineWave(width, height, waveTime * 1.3, totalAmp, 4, 'rgba(48, 209, 88, 0.35)', '#30d158');
+    // Layer 1: Ambient (accent)
+    if (!waveColors) readWaveColors();
+    drawSineWave(width, height, waveTime * 0.6, totalAmp * 0.65, 0, waveColors.l1[0], waveColors.l1[1]);
+    // Layer 2: Mid (secondary accent)
+    drawSineWave(width, height, waveTime * 0.9, totalAmp * 0.85, 2, waveColors.l2[0], waveColors.l2[1]);
+    // Layer 3: Crisp front wave
+    drawSineWave(width, height, waveTime * 1.3, totalAmp, 4, waveColors.l3[0], waveColors.l3[1]);
 }
 
 function drawSineWave(width, height, time, amplitude, phaseOffset, fillColor, strokeColor) {
@@ -1138,7 +1287,7 @@ function drawSineWave(width, height, time, amplitude, phaseOffset, fillColor, st
 
     const grad = waveCtx.createLinearGradient(0, height / 2, 0, height);
     grad.addColorStop(0, fillColor);
-    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    grad.addColorStop(1, (waveColors && waveColors.fade) || 'rgba(0, 0, 0, 0)');
     waveCtx.fillStyle = grad;
     waveCtx.fill();
 
@@ -1159,7 +1308,7 @@ async function refreshPresets() {
     if (!presetSelect) return;
     const res = await fetch('/api/presets');
     const presets = await res.json();
-    presetSelect.innerHTML = `<option value="">Select Preset</option>`;
+    presetSelect.innerHTML = `<option value="">${t('presets.select_placeholder')}</option>`;
     presets.forEach(p => {
         const opt = document.createElement('option');
         opt.value = p.name;
@@ -1180,7 +1329,7 @@ if (loadPresetBtn) {
         if (res.ok) {
             const data = await res.json();
             applyPreset(data.preset);
-            showToast(`Preset '${name}' loaded`, "success");
+            showToast(t('toast.preset_loaded', { name }), "success");
         }
     });
 }
@@ -1189,7 +1338,7 @@ if (savePresetBtn) {
     savePresetBtn.addEventListener('click', async () => {
         const name = presetNameInput.value.trim();
         if (!name) {
-            showToast('Enter a preset name.', 'error');
+            showToast(t('toast.enter_preset_name'), 'error');
             return;
         }
         const payload = {
@@ -1214,7 +1363,7 @@ if (savePresetBtn) {
             presetNameInput.value = '';
             await refreshPresets();
             presetSelect.value = name;
-            showToast(`Preset '${name}' saved!`, 'success');
+            showToast(t('toast.preset_saved', { name }), 'success');
         }
     });
 }
@@ -1251,7 +1400,7 @@ function applyPreset(preset) {
 }
 
 // --- Soundboard Logic ---
-function truncateName(name, max = 14) {
+function truncateName(name, max = 26) {
     return name.length > max ? name.slice(0, max - 3) + '...' : name;
 }
 
@@ -1261,7 +1410,8 @@ function populateSounds(files) {
 
     const noneDiv = document.createElement('div');
     noneDiv.className = 'sound-item ' + (selectedSound === null ? 'active' : '');
-    noneDiv.innerHTML = '<div class="sound-name" title="None">None</div>';
+    const noneLabel = t('soundboard.none');
+    noneDiv.innerHTML = `<div class="sound-name" title="${noneLabel}">${noneLabel}</div>`;
     noneDiv.onclick = () => selectSound(noneDiv, null);
     soundGrid.appendChild(noneDiv);
 
@@ -1424,7 +1574,7 @@ function initWindowControls() {
     if (!header) return;
 
     header.addEventListener('mousedown', (e) => {
-        if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.nav-tab')) return;
+        if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.nav-tab') || e.target.closest('.theme-picker') || e.target.closest('.lang-picker')) return;
         isDragging = true;
         startX = e.screenX;
         startY = e.screenY;

@@ -1,0 +1,469 @@
+/* ========================================================
+   SoundX Router - Spacing & layout rhythm
+   One 4/8px scale, one horizontal gutter (32px) for header,
+   content and footer so everything lines up.
+   ======================================================== */
+
+:root {
+    --gutter: 32px;
+    --gap-sm: 8px;
+    --gap-md: 12px;
+    --gap-lg: 20px;
+    --font-sans: 'Plus Jakarta Sans', 'Inter', 'Segoe UI Variable Text', 'Segoe UI', 'Noto Sans Arabic', 'Rubik', 'Noto Sans SC', 'Noto Sans JP', system-ui, -apple-system, sans-serif;
+}
+
+html, body, button, input, select, textarea {
+    font-family: var(--font-sans);
+}
+
+html[lang="ar"], html[lang="ar"] body, html[lang="ar"] button, html[lang="ar"] input, html[lang="ar"] select, html[lang="ar"] textarea {
+    font-family: 'Cairo', 'Noto Sans Arabic', 'Segoe UI', sans-serif;
+}
+html[lang="ar"] * {
+    letter-spacing: 0 !important;
+}
+
+html[lang="he"], html[lang="he"] body, html[lang="he"] button, html[lang="he"] input, html[lang="he"] select, html[lang="he"] textarea {
+    font-family: 'Rubik', 'Heebo', 'Segoe UI', sans-serif;
+}
+
+html[lang="zh"], html[lang="zh"] body, html[lang="zh"] button, html[lang="zh"] input, html[lang="zh"] select, html[lang="zh"] textarea {
+    font-family: 'Noto Sans SC', 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei UI', 'Microsoft YaHei', sans-serif;
+}
+
+html[lang="ja"], html[lang="ja"] body, html[lang="ja"] button, html[lang="ja"] input, html[lang="ja"] select, html[lang="ja"] textarea {
+    font-family: 'Noto Sans JP', 'Yu Gothic UI', 'Meiryo UI', 'Hiragino Sans', sans-serif;
+}
+
+html[lang="ru"], html[lang="ru"] body, html[lang="ru"] button, html[lang="ru"] input, html[lang="ru"] select, html[lang="ru"] textarea {
+    font-family: 'Inter', 'Plus Jakarta Sans', 'Segoe UI Variable Text', 'Segoe UI', sans-serif;
+}
+
+/* ---------- Header ---------- */
+header {
+    position: relative;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 16px 24px;
+    gap: 8px;
+    border-top-left-radius: var(--radius-window);
+    border-top-right-radius: var(--radius-window);
+}
+
+.studio-main {
+    position: relative;
+    z-index: 1;
+    padding: 4px var(--gutter) 0;
+    gap: 0;
+}
+
+.logo-area { gap: 8px; flex-shrink: 0; justify-self: start; }
+.logo-title { font-size: 17px; white-space: nowrap; }
+.version-badge { margin-left: 0; padding: 3px 7px; }
+.nav-tabs { flex-shrink: 0; justify-self: center; }
+.nav-tab { padding: 7px 10px; gap: 6px; font-size: 12px; white-space: nowrap; }
+.soundx-pill, .status-indicator { white-space: nowrap; }
+.status-indicator { padding: 5px 11px; font-size: 10.5px; gap: 6px; letter-spacing: 0.7px; }
+.status-indicator::before { margin-right: 0; }
+
+.logo-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: none;
+    box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.28);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.logo-badge img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.header-controls { gap: 6px; flex-shrink: 0; justify-self: end; }
+.header-controls > * + * { margin-left: 0; }
+.window-actions { gap: 8px; }
+.window-actions .win-btn + .win-btn { margin-left: 0; }
+
+.theme-btn,
+.lang-btn { width: 30px; height: 30px; }
+.theme-btn svg,
+.lang-btn svg { width: 15px; height: 15px; }
+
+/* ---------- Workspace (inner spacing) ---------- */
+
+.tab-content {
+    padding-right: 8px;
+    padding-bottom: 20px;
+}
+
+.rack-header {
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+    gap: 24px;
+}
+
+.rack-title-group h2 { margin-bottom: 6px; }
+.rack-actions { gap: 12px; }
+.action-btn { padding: 10px 18px; gap: 8px; }
+.action-btn.small { padding: 10px 16px; }
+
+.apps-empty-state { padding: 48px 32px; gap: 12px; }
+.apps-empty-state h3 { margin-top: 4px; }
+.apps-empty-state p { margin-bottom: 12px; }
+
+.app-rack-grid { gap: 16px; padding-bottom: 8px; }
+.app-card { padding: 18px 20px; gap: 14px; }
+.app-slider-row { gap: 14px; }
+
+/* ---------- Routing & Devices ---------- */
+.devices-layout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-lg);
+}
+
+.soundx-feature-card {
+    padding: 24px 28px;
+    gap: 18px;
+    margin-bottom: 0;
+}
+
+.feature-header { gap: 20px; align-items: center; }
+.feature-info { padding-right: 12px; }
+.feature-info h3 { margin-bottom: 6px; }
+.routing-action-bar { gap: 12px; margin-top: 0; }
+.feature-status-banner { margin-top: 0; padding: 12px 18px; }
+.routing-alert-card, .routing-missing-card { padding: 12px 16px; gap: 14px; }
+
+.device-columns { gap: var(--gap-lg); align-items: stretch; }
+
+.device-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 24px;
+}
+
+.device-panel h2 { margin-bottom: 20px; }
+
+.device-panel .control-group {
+    gap: 8px;
+    margin-bottom: 22px;
+}
+
+.device-panel .control-group:last-child { margin-bottom: 0; }
+
+.device-panel .select-wrapper { margin-top: 0; }
+.device-panel .input-hint { margin-top: 0; line-height: 1.45; }
+.device-panel .slider-row { margin-top: 10px; }
+
+.monitor-toggle-card { margin-bottom: 22px; padding: 14px 16px; gap: 16px; }
+.toggle-info { gap: 4px; }
+
+#monitor-controls-group .slider-row { margin-top: 16px; }
+#monitor-controls-group .slider-row label { white-space: nowrap; }
+
+.mute-btn-small { padding: 6px 14px; }
+
+.presets-section {
+    margin-top: 28px !important;
+    padding-top: 24px !important;
+}
+
+.presets-section h2 { margin-bottom: 16px !important; }
+.preset-controls { gap: 12px !important; margin-top: 0 !important; }
+.preset-row { gap: 12px !important; }
+
+/* ---------- Soundboard ---------- */
+.soundboard-layout {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.soundboard-panel {
+    flex: 1;
+    min-height: 0;
+    padding: 24px;
+    gap: 0;
+}
+
+.sound-header { align-items: flex-start; margin-bottom: 20px; gap: 16px; }
+.sound-header h2 { margin-bottom: 6px; }
+.sound-header-buttons { display: flex; gap: 8px; flex-shrink: 0; }
+.icon-btn { padding: 8px 14px; }
+
+.sound-grid {
+    grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+    gap: 12px;
+    padding: 0 6px 6px 0;
+    margin: 0;
+    align-content: start;
+    min-height: 0;
+}
+
+.sound-item {
+    aspect-ratio: auto;
+    height: 104px;
+    min-height: 0;
+    padding: 26px 10px 10px;
+    gap: 2px;
+}
+
+.sound-item::before { font-size: 22px; margin-bottom: 4px; }
+
+.sound-name {
+    max-width: 100%;
+    padding: 0 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sound-preview { top: 8px; right: 8px; width: 26px; height: 26px; }
+.keybind-badge { top: 8px; left: 8px; height: 22px; min-width: 22px; }
+
+.ambience-volume-bar {
+    margin-top: 18px;
+    padding-top: 18px;
+    gap: 16px;
+}
+
+/* ---------- Footer ---------- */
+.studio-footer {
+    position: relative;
+    z-index: 1;
+    padding: 14px var(--gutter);
+    align-items: center;
+    gap: 28px;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-bottom-left-radius: var(--radius-window);
+    border-bottom-right-radius: var(--radius-window);
+}
+
+.footer-meters {
+    flex: 0 0 auto;
+    min-width: 0;
+    gap: 24px;
+}
+
+.meter-block {
+    flex: 0 0 124px;
+    min-width: 124px;
+    gap: 8px;
+}
+
+.meter-label-row { gap: 10px; font-size: 10.5px; }
+.footer-waveform { min-width: 120px; }
+.toggle-btn {
+    margin-top: 0;
+    height: 48px;
+    padding: 0 28px;
+    box-sizing: border-box;
+}
+
+/* ---------- Modal ---------- */
+.modal-card { padding: 24px; gap: 18px; }
+.modal-app-list { gap: 10px; }
+.modal-app-item { padding: 12px 16px; }
+.modal-filter-tab { padding: 9px 16px; }
+
+/* ---------- Rounded window corners ---------- */
+.glass-container {
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    clip-path: inset(0 round var(--radius-window));
+}
+.background-blobs { border-radius: var(--radius-window); }
+
+/* ---------- RTL Support (Arabic / Hebrew) ---------- */
+html[dir="rtl"] .logo-title { direction: ltr; }
+html[dir="rtl"] .tab-content { padding-right: 0; padding-left: 8px; }
+html[dir="rtl"] .sound-grid { padding: 0 0 6px 6px; }
+html[dir="rtl"] .theme-menu,
+html[dir="rtl"] .lang-menu { right: auto; left: 0; }
+html[dir="rtl"] .theme-option { text-align: right; }
+html[dir="rtl"] .feature-info { padding-right: 0; padding-left: 12px; }
+html[dir="rtl"] .feature-action { margin-left: 0; margin-right: auto; }
+html[dir="rtl"] .vol-badge { text-align: left; }
+html[dir="rtl"] .select-wrapper::after { right: auto; left: 16px; }
+html[dir="rtl"] select { direction: ltr; text-align: right; padding: 12px 16px 12px 44px; }
+html[dir="rtl"] .toast.error,
+html[dir="rtl"] .toast.success,
+html[dir="rtl"] .toast.info { border-left: none; border-right: 4px solid var(--accent-color); }
+html[dir="rtl"] .toast.error { border-right-color: #ff4757; }
+html[dir="rtl"] .toast.success { border-right-color: #2ed573; }
+
+/* ---------- Vector UI Icons ---------- */
+.ui-icon {
+    display: inline-block;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+.tab-icon,
+.feature-icon,
+.app-avatar,
+.modal-app-icon,
+.app-icon-btn,
+.routing-alert-card .alert-icon,
+.routing-missing-card .missing-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.tab-icon svg {
+    width: 15px;
+    height: 15px;
+    opacity: 0.78;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.nav-tab:hover .tab-icon svg,
+.nav-tab.active .tab-icon svg {
+    opacity: 1;
+}
+
+.action-btn,
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+}
+
+.action-btn svg,
+.icon-btn svg {
+    flex-shrink: 0;
+    opacity: 0.92;
+}
+
+.apps-empty-state .empty-icon,
+.modal-empty-state .empty-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    background: rgba(var(--accent-rgb), 0.12);
+    border: 1px solid rgba(var(--accent-rgb), 0.26);
+    color: var(--accent-color);
+    margin-bottom: 6px;
+    opacity: 1;
+}
+
+.modal-empty-state .empty-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 15px;
+}
+
+.feature-icon-wrapper {
+    color: var(--on-accent, #ffffff);
+}
+
+html[data-theme="light"] .feature-icon-wrapper {
+    color: #2563eb;
+}
+
+.feature-icon svg {
+    width: 24px;
+    height: 24px;
+    color: inherit;
+}
+
+.app-avatar svg,
+.modal-app-icon svg {
+    color: var(--accent-color);
+}
+
+/* ---------- Typography Scaling (match Japanese visual density across Latin/Cyrillic/RTL/SC) ---------- */
+html:not([lang="ja"]) .nav-tab { font-size: 12.5px; padding: 7px 10px; gap: 6px; }
+html:not([lang="ja"]) .tab-badge,
+html:not([lang="ja"]) .soundx-pill { font-size: 10.5px; }
+html:not([lang="ja"]) .status-indicator { font-size: 11px; }
+html:not([lang="ja"]) .rack-title-group h2 { font-size: 20px; }
+html:not([lang="ja"]) .rack-subtitle { font-size: 13.5px; }
+html:not([lang="ja"]) .apps-empty-state h3 { font-size: 20px; }
+html:not([lang="ja"]) .apps-empty-state p { font-size: 14.5px; }
+html:not([lang="ja"]) .feature-info h3 { font-size: 17.5px; }
+html:not([lang="ja"]) .feature-info p { font-size: 14px; }
+html:not([lang="ja"]) .feature-status-banner { font-size: 13.5px; }
+html:not([lang="ja"]) .routing-alert-card,
+html:not([lang="ja"]) .routing-missing-card { font-size: 13px; }
+html:not([lang="ja"]) h2 { font-size: 12px; }
+html:not([lang="ja"]) .presets-section h2 { font-size: 12px !important; }
+html:not([lang="ja"]) label,
+html:not([lang="ja"]) .volume-header { font-size: 14px; }
+html:not([lang="ja"]) select,
+html:not([lang="ja"]) option { font-size: 14px; }
+html:not([lang="ja"]) .preset-row select,
+html:not([lang="ja"]) .preset-row input,
+html:not([lang="ja"]) .preset-row .icon-btn { font-size: 14px !important; }
+html:not([lang="ja"]) .input-hint { font-size: 12.5px; }
+html:not([lang="ja"]) .toggle-info strong { font-size: 14px; }
+html:not([lang="ja"]) .toggle-info span { font-size: 12.5px; }
+html:not([lang="ja"]) .action-btn,
+html:not([lang="ja"]) .feature-action .glow-btn { font-size: 14px; }
+html:not([lang="ja"]) .action-btn.small { font-size: 13.5px; }
+html:not([lang="ja"]) .icon-btn { font-size: 12.5px; }
+html:not([lang="ja"]) .mute-btn-small { font-size: 12.5px; }
+html:not([lang="ja"]) .app-name,
+html:not([lang="ja"]) .modal-app-title { font-size: 15px; }
+html:not([lang="ja"]) .app-pid,
+html:not([lang="ja"]) .modal-app-sub,
+html:not([lang="ja"]) .vol-badge,
+html:not([lang="ja"]) .audio-active-badge { font-size: 12px; }
+html:not([lang="ja"]) .sound-name { font-size: 12.5px; }
+html:not([lang="ja"]) .ambience-volume-bar label,
+html:not([lang="ja"]) .volume-inline .volume-header,
+html:not([lang="ja"]) .modal-add-btn,
+html:not([lang="ja"]) .modal-title-group p,
+html:not([lang="ja"]) .modal-empty-state p { font-size: 13.5px; }
+html:not([lang="ja"]) .modal-filter-tab,
+html:not([lang="ja"]) .modal-search-bar input { font-size: 14px; }
+html:not([lang="ja"]) .meter-label-row { font-size: 11.5px; }
+html:not([lang="ja"]) .toggle-btn { font-size: 14.5px; }
+
+/* Extra readability boost for compact Arabic & Hebrew glyph heights */
+html[lang="ar"] .nav-tab,
+html[lang="he"] .nav-tab { font-size: 13px; }
+html[lang="ar"] .feature-info h3,
+html[lang="he"] .feature-info h3 { font-size: 18.5px; }
+html[lang="ar"] .feature-info p,
+html[lang="he"] .feature-info p { font-size: 15px; line-height: 1.65; }
+html[lang="ar"] .feature-status-banner,
+html[lang="he"] .feature-status-banner { font-size: 14px; }
+html[lang="ar"] h2,
+html[lang="he"] h2 { font-size: 13px; }
+html[lang="ar"] .presets-section h2,
+html[lang="he"] .presets-section h2 { font-size: 13px !important; }
+html[lang="ar"] label,
+html[lang="he"] label,
+html[lang="ar"] .volume-header,
+html[lang="he"] .volume-header,
+html[lang="ar"] select,
+html[lang="he"] select,
+html[lang="ar"] option,
+html[lang="he"] option { font-size: 14.5px; }
+html[lang="ar"] .toggle-info strong,
+html[lang="he"] .toggle-info strong { font-size: 14.5px; }
+html[lang="ar"] .input-hint,
+html[lang="he"] .input-hint,
+html[lang="ar"] .toggle-info span,
+html[lang="he"] .toggle-info span { font-size: 13px; }
+html[lang="ar"] .action-btn.small,
+html[lang="he"] .action-btn.small { font-size: 14px; }
+

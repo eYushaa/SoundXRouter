@@ -3,10 +3,10 @@ import os
 import threading
 import json
 import ctypes
+import locale
 from flask import Flask, render_template, jsonify, request
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
-from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtCore import Qt, QUrl, QPoint, pyqtSlot, QObject, pyqtSignal
 from PyQt5.QtGui import QIcon
 from audio_manager import AudioManager
@@ -47,9 +47,31 @@ EXE_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else 
 SOUNDS_DIR = os.path.join(EXE_DIR, "sounds")
 PRESETS_FILE = os.path.join(EXE_DIR, "presets.json")
 CONFIG_FILE = os.path.join(EXE_DIR, "config.json")
-APP_ICON_PATH = os.path.join(BASE_DIR, "static", "logo.png")
-CURRENT_VERSION = "V1.0.1"
+APP_ICON_PATH = os.path.join(BASE_DIR, "static", "logo.ico")
+CURRENT_VERSION = "V1.0.3"
 UPDATE_URL = "https://api.github.com/repos/eYushaa/SoundXRouter/releases/latest"
+SUPPORTED_LANGUAGES = {"tr", "en", "ar", "ru", "zh", "ja", "he", "fr", "de", "es"}
+
+def get_system_language() -> str:
+    """Detect the primary OS UI language; fall back to 'en' if unsupported."""
+    raw_loc = None
+    if sys.platform.startswith("win"):
+        try:
+            lcid = ctypes.windll.kernel32.GetUserDefaultUILanguage()
+            raw_loc = locale.windows_locale.get(lcid)
+        except Exception:
+            raw_loc = None
+    if not raw_loc:
+        try:
+            raw_loc = locale.getlocale()[0]
+        except Exception:
+            raw_loc = None
+    if not raw_loc:
+        return "en"
+    code = raw_loc.strip().lower().replace("-", "_").split("_")[0]
+    if code == "iw":
+        code = "he"
+    return code if code in SUPPORTED_LANGUAGES else "en"
 
 def load_config():
     defaults = {
@@ -122,10 +144,10 @@ def check_update():
     try:
         return jsonify({
             "current": CURRENT_VERSION,
-            "latest": "1.1", 
-            "update_available": True,
+            "latest": CURRENT_VERSION,
+            "update_available": False,
             "download_url": "https://github.com/eYushaa/SoundXRouter/releases/latest",
-            "message": "New version 1.1 is available!"
+            "message": f"You are using the latest version ({CURRENT_VERSION})."
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -165,6 +187,7 @@ def init_data():
 
     return jsonify({
         "config": cfg,
+        "system_lang": get_system_language(),
         "host_apis": manager.get_host_apis(),
         "devices": manager.get_devices(),
         "sounds": get_sound_files(),

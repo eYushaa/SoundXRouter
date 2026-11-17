@@ -1,6 +1,6 @@
-# Audio files directory
-sounds/*
-!sounds/.gitkeep
+# Audio files directory & runtime JSON configs
+sounds/
+*.json
 
 # PyInstaller build outputs
 dist/
@@ -19,3 +19,8 @@ env/
 # Editor / IDE
 .vscode/
 .idea/
+
+# OS & Build Artifacts
+*.spec.bak
+.DS_Store
+Thumbs.db
